@@ -8,7 +8,7 @@ import CreateGame from '../components/game/CreateGame';
 import JoinGame from '../components/game/JoinGame';
 import toast from 'react-hot-toast';
 import { PowerGlitch } from 'powerglitch';
-import { Box, Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react';
+import { Box, Tabs } from '@chakra-ui/react';
 
 const HomePage: React.FC = () => {
   const { user, loading } = useAuth();
@@ -132,39 +132,39 @@ const HomePage: React.FC = () => {
             p={6} 
             boxShadow="xl"
           >
-            <Tabs variant="line" colorScheme="purple" isFitted defaultIndex={0}>
-              <TabList mb="1em">
-                <Tab 
+            <Tabs.Root variant="line" colorScheme="purple" fitted defaultValue="create">
+              <Tabs.List mb="1em">
+                <Tabs.Trigger 
+                  value="create"
                   _selected={{ color: 'white', borderColor: 'purple.400' }} 
                   color="gray.300"
                   fontWeight="bold"
                 >
                   Create a Game
-                </Tab>
-                <Tab 
+                </Tabs.Trigger>
+                <Tabs.Trigger 
+                  value="join"
                   _selected={{ color: 'white', borderColor: 'purple.400' }} 
                   color="gray.300"
                   fontWeight="bold"
                 >
                   Join a Game
-                </Tab>
-              </TabList>
+                </Tabs.Trigger>
+              </Tabs.List>
               
-              <TabPanels p={0}>
-                <TabPanel p={0}>
-                  <CreateGame user={user} />
-                </TabPanel>
-                <TabPanel p={0}>
-                  <Box className="mb-8">
-                    <h2 className="text-2xl font-bold text-white mb-4">My Active Games</h2>
-                    <div className="p-6 bg-gray-800 bg-opacity-50 rounded-xl text-center text-gray-400">
-                      No active games found. Join a game below!
-                    </div>
-                  </Box>
-                  <JoinGame user={user} />
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
+              <Tabs.Content value="create" p={0}>
+                <CreateGame user={user} />
+              </Tabs.Content>
+              <Tabs.Content value="join" p={0}>
+                <Box className="mb-8">
+                  <h2 className="text-2xl font-bold text-white mb-4">My Active Games</h2>
+                  <div className="p-6 bg-gray-800 bg-opacity-50 rounded-xl text-center text-gray-400">
+                    No active games found. Join a game below!
+                  </div>
+                </Box>
+                <JoinGame user={user} />
+              </Tabs.Content>
+            </Tabs.Root>
           </Box>
         </div>
       ) : (
