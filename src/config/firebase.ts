@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
+import { getAnalytics, logEvent } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -16,6 +17,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+// Initialize Analytics in production only
+const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+
 // Initialize Firestore with memory cache and specific database
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
@@ -24,4 +28,14 @@ const db = initializeFirestore(app, {
 
 const googleProvider = new GoogleAuthProvider();
 
-export { auth, db, googleProvider };
+// Analytics helper function
+const trackEvent = (eventName: string, eventParams = {}) => {
+  if (analytics && process.env.NODE_ENV === 'production') {
+    logEvent(analytics, eventName, {
+      ...eventParams,
+      timestamp: Date.now()
+    });
+  }
+};
+
+export { auth, db, googleProvider, trackEvent, analytics };

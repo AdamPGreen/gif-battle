@@ -10,7 +10,9 @@ import {
   arrayUnion,
   arrayRemove,
   Timestamp,
-  onSnapshot
+  onSnapshot,
+  runTransaction,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { nanoid } from 'nanoid';
@@ -30,19 +32,65 @@ const DEFAULT_PROMPTS: Prompt[] = [
   { id: 'p10', text: 'How I dance when no one is watching' }
 ];
 
+// Last request timestamps to implement rate limiting
+const lastRequestTimestamps = {
+  create: 0,
+  join: 0,
+  submit: 0
+};
+
+// Rate limit configuration (in milliseconds)
+const RATE_LIMITS = {
+  create: 5000,  // 5 seconds between game creations
+  join: 2000,    // 2 seconds between joining games
+  submit: 2000   // 2 seconds between submissions
+};
+
+// Helper function to check rate limits
+const checkRateLimit = (action) => {
+  const now = Date.now();
+  const lastRequest = lastRequestTimestamps[action];
+  
+  if (now - lastRequest < RATE_LIMITS[action]) {
+    throw new Error(`Please wait before performing this action again (${Math.ceil((RATE_LIMITS[action] - (now - lastRequest)) / 1000)} seconds)`);
+  }
+  
+  lastRequestTimestamps[action] = now;
+};
+
 // Helper function to handle errors
 const handleError = (error: any) => {
   console.error('Firestore error:', error);
-  if (error.code === 'permission-denied') {
-    throw new Error('You do not have permission to perform this action. Please check your Firestore rules.');
-  } else if (error.code === 'unavailable') {
-    throw new Error('Firestore is currently unavailable. Please try again later.');
+  
+  // Network errors
+  if (error.code === 'unavailable' || error.code === 'network-request-failed') {
+    throw new Error('Network connection issue. Please check your internet connection and try again.');
   }
-  throw error;
+  
+  // Permission errors
+  if (error.code === 'permission-denied') {
+    throw new Error('You do not have permission to perform this action.');
+  }
+  
+  // Rate limiting
+  if (error.message?.includes('Please wait')) {
+    throw error;
+  }
+  
+  // Transaction failures
+  if (error.code === 'aborted') {
+    throw new Error('Operation was interrupted. Please try again.');
+  }
+  
+  // Default error
+  throw new Error('An error occurred. Please try again later.');
 };
 
 export const createGame = async (hostId: string, hostName: string, gameName: string) => {
   try {
+    // Check rate limit
+    checkRateLimit('create');
+    
     const gameId = nanoid(8);
     const gameRef = doc(db, 'games', gameId);
     
@@ -77,54 +125,59 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
 
 export const joinGame = async (gameId: string, player: Player) => {
   try {
+    // Check rate limit
+    checkRateLimit('join');
+    
     const gameRef = doc(db, 'games', gameId);
-    const gameDoc = await getDoc(gameRef);
     
-    if (!gameDoc.exists()) {
-      throw new Error('Game not found');
-    }
-    
-    const gameData = gameDoc.data() as Game;
-    
-    if (gameData.status !== 'waiting') {
-      throw new Error('Game has already started');
-    }
-    
-    if (gameData.players.length >= gameData.maxPlayers) {
-      throw new Error('Game is full');
-    }
-    
-    // Check if player is already in the game
-    const existingPlayer = gameData.players.find(p => p.id === player.id);
-    if (existingPlayer) {
-      // If player exists but is inactive, set to active
-      if (!existingPlayer.isActive) {
-        await updateDoc(gameRef, {
-          players: gameData.players.map(p => 
-            p.id === player.id ? { ...p, isActive: true } : p
-          ),
-          updatedAt: Date.now()
-        });
+    return await runTransaction(db, async (transaction) => {
+      const gameDoc = await transaction.get(gameRef);
+      
+      if (!gameDoc.exists()) {
+        throw new Error('Game not found');
       }
+      
+      const gameData = gameDoc.data() as Game;
+      
+      if (gameData.status !== 'waiting') {
+        throw new Error('Game has already started');
+      }
+      
+      if (gameData.players.length >= gameData.maxPlayers) {
+        throw new Error('Game is full');
+      }
+      
+      // Check if player is already in the game
+      const existingPlayer = gameData.players.find(p => p.id === player.id);
+      if (existingPlayer) {
+        // If player exists but is inactive, set to active
+        if (!existingPlayer.isActive) {
+          transaction.update(gameRef, {
+            players: gameData.players.map(p => 
+              p.id === player.id ? { ...p, isActive: true } : p
+            ),
+            updatedAt: serverTimestamp()
+          });
+        }
+        return gameId;
+      }
+      
+      // Add new player
+      transaction.update(gameRef, {
+        players: arrayUnion({
+          ...player,
+          isHost: false,
+          isJudge: false,
+          score: 0,
+          isActive: true
+        }),
+        updatedAt: serverTimestamp()
+      });
+      
       return gameId;
-    }
-    
-    // Add new player
-    await updateDoc(gameRef, {
-      players: arrayUnion({
-        ...player,
-        isHost: false,
-        isJudge: false,
-        score: 0,
-        isActive: true
-      }),
-      updatedAt: Date.now()
     });
-    
-    return gameId;
   } catch (error) {
-    console.error('Error joining game:', error);
-    throw error;
+    return handleError(error);
   }
 };
 
