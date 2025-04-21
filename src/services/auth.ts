@@ -10,6 +10,15 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { User } from '../types';
 
+// Helper function to handle auth errors
+const handleAuthError = (error: any) => {
+  console.error('Auth error:', error);
+  if (error.code === 'auth/network-request-failed') {
+    throw new Error('Network error. Please check your internet connection.');
+  }
+  throw error;
+};
+
 export const signUp = async (email: string, password: string, displayName: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -28,8 +37,7 @@ export const signUp = async (email: string, password: string, displayName: strin
     
     return userCredential.user;
   } catch (error) {
-    console.error('Error signing up:', error);
-    throw error;
+    return handleAuthError(error);
   }
 };
 
@@ -38,8 +46,7 @@ export const signIn = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error) {
-    console.error('Error signing in:', error);
-    throw error;
+    return handleAuthError(error);
   }
 };
 
@@ -62,8 +69,7 @@ export const signInWithGoogle = async () => {
     
     return result.user;
   } catch (error) {
-    console.error('Error signing in with Google:', error);
-    throw error;
+    return handleAuthError(error);
   }
 };
 
@@ -71,8 +77,7 @@ export const signOut = async () => {
   try {
     await firebaseSignOut(auth);
   } catch (error) {
-    console.error('Error signing out:', error);
-    throw error;
+    return handleAuthError(error);
   }
 };
 
@@ -84,7 +89,6 @@ export const createUserDocument = async (userId: string, userData: User) => {
       createdAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error creating user document:', error);
-    throw error;
+    return handleAuthError(error);
   }
 };

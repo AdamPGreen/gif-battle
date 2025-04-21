@@ -10,11 +10,16 @@ import {
   arrayUnion,
   arrayRemove,
   Timestamp,
-  onSnapshot
+  onSnapshot,
+  enableNetwork,
+  disableNetwork
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { nanoid } from 'nanoid';
 import type { Game, Player, Round, Prompt, GifSubmission } from '../types';
+
+// Enable network by default
+enableNetwork(db).catch(console.error);
 
 // Default prompts for the game
 const DEFAULT_PROMPTS: Prompt[] = [
@@ -29,6 +34,19 @@ const DEFAULT_PROMPTS: Prompt[] = [
   { id: 'p9', text: 'When someone spoils a show I\'m watching' },
   { id: 'p10', text: 'How I dance when no one is watching' }
 ];
+
+// Helper function to handle network errors
+const handleNetworkError = async (error: any) => {
+  console.error('Network error:', error);
+  if (error.code === 'failed-precondition' || error.code === 'unavailable') {
+    try {
+      await enableNetwork(db);
+    } catch (e) {
+      console.error('Failed to re-enable network:', e);
+    }
+  }
+  throw error;
+};
 
 export const createGame = async (hostId: string, hostName: string, gameName: string) => {
   try {
@@ -60,8 +78,7 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
     await setDoc(gameRef, newGame);
     return gameId;
   } catch (error) {
-    console.error('Error creating game:', error);
-    throw error;
+    return handleNetworkError(error);
   }
 };
 
