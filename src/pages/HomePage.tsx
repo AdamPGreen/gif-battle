@@ -113,7 +113,7 @@ const HomePage: React.FC = () => {
           </motion.div>
           
           <motion.div 
-            className="text-center mb-12"
+            className="text-center mb-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -126,32 +126,32 @@ const HomePage: React.FC = () => {
             </p>
           </motion.div>
           
-          <div 
-            className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm"
-          >
-            <CustomTabs 
-              tabs={[
-                {
-                  label: 'Create a Game',
-                  content: <CreateGame user={user} />
-                },
-                {
-                  label: 'Join a Game',
-                  content: (
-                    <>
-                      <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-white mb-4">My Active Games</h2>
-                        <div className="p-6 bg-gray-800 bg-opacity-50 rounded-xl text-center text-gray-400">
-                          No active games found. Join a game below!
-                        </div>
+          <CustomTabs 
+            tabs={[
+              {
+                label: 'Create a Game',
+                content: (
+                  <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm">
+                    <CreateGame user={user} />
+                  </div>
+                )
+              },
+              {
+                label: 'Join a Game',
+                content: (
+                  <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm">
+                    <div className="mb-8">
+                      <h2 className="text-2xl font-bold text-white mb-4">My Active Games</h2>
+                      <div className="p-6 bg-gray-800 bg-opacity-50 rounded-xl text-center text-gray-400">
+                        No active games found. Join a game below!
                       </div>
-                      <JoinGame user={user} />
-                    </>
-                  )
-                }
-              ]}
-            />
-          </div>
+                    </div>
+                    <JoinGame user={user} />
+                  </div>
+                )
+              }
+            ]}
+          />
         </div>
       ) : (
         <div className="w-full max-w-6xl">

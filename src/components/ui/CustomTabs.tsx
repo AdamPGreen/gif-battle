@@ -14,15 +14,15 @@ const CustomTabs: React.FC<CustomTabsProps> = ({ tabs, initialTabIndex = 0 }) =>
   const [activeTabIndex, setActiveTabIndex] = useState(initialTabIndex);
 
   return (
-    <div>
-      <div className="mb-4 border-b border-gray-700 flex">
+    <div className="mb-6">
+      <div className="flex rounded-md bg-gray-900 p-1 shadow-sm border border-gray-800">
         {tabs.map((tab, index) => (
           <button
             key={tab.label}
-            className={`px-4 py-2 font-bold transition-colors duration-200 
+            className={`flex-1 rounded-md px-4 py-3 text-center font-medium transition-all duration-200
               ${activeTabIndex === index 
-                ? 'text-white border-b-2 border-purple-400' 
-                : 'text-gray-400 hover:text-gray-200'
+                ? 'bg-gray-800 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)] border border-gray-700' 
+                : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
               }`}
             onClick={() => setActiveTabIndex(index)}
           >
@@ -30,7 +30,7 @@ const CustomTabs: React.FC<CustomTabsProps> = ({ tabs, initialTabIndex = 0 }) =>
           </button>
         ))}
       </div>
-      <div>
+      <div className="mt-4">
         {tabs[activeTabIndex]?.content}
       </div>
     </div>
