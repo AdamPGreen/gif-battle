@@ -21,12 +21,12 @@ const auth = getAuth(app);
 // Initialize Analytics in production only
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// Initialize Firestore with memory cache and specific database ID
+// Initialize Firestore with memory cache
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   experimentalForceLongPolling: true, // Use long polling instead of WebSockets
   ignoreUndefinedProperties: true
-}, "gifbattle");
+});
 
 // Try to enable multi-tab persistence (but don't crash if it fails)
 if (typeof window !== 'undefined') {
