@@ -1,0 +1,91 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Users, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import useGameStore from '../../store/gameStore';
+import toast from 'react-hot-toast';
+import type { User } from '../../types';
+
+interface JoinGameProps {
+  user: User;
+}
+
+const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
+  const [gameId, setGameId] = useState('');
+  const { joinExistingGame, loading } = useGameStore();
+  const navigate = useNavigate();
+
+  const handleJoinGame = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!gameId.trim()) {
+      toast.error('Please enter a game ID');
+      return;
+    }
+    
+    try {
+      await joinExistingGame(
+        gameId, 
+        user.id, 
+        user.displayName || 'Anonymous'
+      );
+      
+      toast.success('Joined game successfully!');
+      navigate(`/game/${gameId}`);
+    } catch (error: any) {
+      console.error('Error joining game:', error);
+      toast.error(error.message || 'Failed to join game');
+    }
+  };
+
+  return (
+    <motion.div 
+      className="w-full max-w-md mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+    >
+      <div className="bg-black bg-opacity-80 border border-purple-600 rounded-xl p-8 shadow-lg backdrop-blur-sm">
+        <div className="flex justify-center mb-6">
+          <Users size={48} className="text-cyan-400" />
+        </div>
+        
+        <h2 className="text-2xl font-bold mb-6 text-center text-white">Join Existing Game</h2>
+        
+        <form onSubmit={handleJoinGame} className="space-y-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Game ID"
+              value={gameId}
+              onChange={(e) => setGameId(e.target.value)}
+              className="w-full py-3 px-4 text-gray-200 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          
+          <motion.button
+            type="submit"
+            className="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-medium rounded-lg shadow-lg flex items-center justify-center gap-2 hover:from-cyan-700 hover:to-blue-700 transition-all"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Joining Game...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <ArrowRight className="h-5 w-5" />
+                Join Game
+              </span>
+            )}
+          </motion.button>
+        </form>
+      </div>
+    </motion.div>
+  );
+};
+
+export default JoinGame;
