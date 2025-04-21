@@ -10,7 +10,8 @@ const firebaseConfig = {
   projectId: "gif-battle-bceab",
   storageBucket: "gif-battle-bceab.firebasestorage.app",
   messagingSenderId: "550435143039",
-  appId: "1:550435143039:web:8320bf8623ca670c282e4a"
+  appId: "1:550435143039:web:8320bf8623ca670c282e4a",
+  databaseURL: "https://gif-battle-bceab.firebaseio.com"
 };
 
 // Initialize Firebase
@@ -20,11 +21,11 @@ const auth = getAuth(app);
 // Initialize Analytics in production only
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// Initialize Firestore with memory cache and specific database
+// Initialize Firestore with memory cache
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   experimentalForceLongPolling: true, // Use long polling instead of WebSockets
-  databaseId: 'gifbattle' // Ensure the correct database ID is used
+  ignoreUndefinedProperties: true
 });
 
 // Try to enable multi-tab persistence (but don't crash if it fails)
