@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
+import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
@@ -23,8 +23,20 @@ const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 // Initialize Firestore with memory cache and specific database
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-  databaseId: 'gifbattle'
+  experimentalForceLongPolling: true, // Use long polling instead of WebSockets
+  databaseId: 'gifbattle' // Ensure the correct database ID is used
 });
+
+// Try to enable multi-tab persistence (but don't crash if it fails)
+if (typeof window !== 'undefined') {
+  try {
+    enableMultiTabIndexedDbPersistence(db).catch(err => {
+      console.warn('Failed to enable persistence:', err);
+    });
+  } catch (err) {
+    console.warn('Failed to initialize persistence:', err);
+  }
+}
 
 const googleProvider = new GoogleAuthProvider();
 

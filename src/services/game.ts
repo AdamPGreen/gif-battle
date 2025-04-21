@@ -92,6 +92,8 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
     checkRateLimit('create');
     
     const gameId = nanoid(8);
+    console.log(`Creating game with ID: ${gameId} in database: gifbattle`);
+    
     const gameRef = doc(db, 'games', gameId);
     
     const newGame: Game = {
@@ -116,9 +118,37 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
       updatedAt: Date.now()
     };
     
-    await setDoc(gameRef, newGame);
+    // Use a transaction for better reliability
+    await runTransaction(db, async (transaction) => {
+      // First check if a game with this ID already exists
+      const gameSnapshot = await transaction.get(gameRef);
+      if (gameSnapshot.exists()) {
+        throw new Error(`Game with ID ${gameId} already exists`);
+      }
+      
+      // Create the game
+      transaction.set(gameRef, newGame);
+      return gameId;
+    });
+    
+    console.log(`Game created successfully with ID: ${gameId}`);
     return gameId;
   } catch (error) {
+    console.error('Error creating game:', error);
+    if (error.code === 'permission-denied') {
+      console.error('Permission denied. Check Firestore rules.');
+    } else if (error.code === 'unavailable') {
+      console.error('Firestore is currently unavailable');
+    } else if (error.code === 'resource-exhausted') {
+      console.error('Quota exceeded');
+    } else if (error.code === 'cancelled') {
+      console.error('Operation was cancelled');
+    } else if (error.code === 'deadline-exceeded') {
+      console.error('Deadline exceeded on operation');
+    } else if (error.message) {
+      console.error(`Error message: ${error.message}`);
+    }
+    
     return handleError(error);
   }
 };

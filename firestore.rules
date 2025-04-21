@@ -1,6 +1,13 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // For testing only - allow all operations
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Uncomment the rules below after you confirm everything is working
+    /*
     // Users can only read and write their own data
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
@@ -31,5 +38,6 @@ service cloud.firestore {
       return oldData.players.hasAny([{'id': userId}]) && 
              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rounds']);
     }
+    */
   }
 }
