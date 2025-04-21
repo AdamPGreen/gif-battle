@@ -8,6 +8,7 @@ import CreateGame from '../components/game/CreateGame';
 import JoinGame from '../components/game/JoinGame';
 import toast from 'react-hot-toast';
 import { PowerGlitch } from 'powerglitch';
+import { Box, Tabs } from '@chakra-ui/react';
 
 const HomePage: React.FC = () => {
   const { user, loading } = useAuth();
@@ -125,10 +126,46 @@ const HomePage: React.FC = () => {
             </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-2 gap-8">
-            <CreateGame user={user} />
-            <JoinGame user={user} />
-          </div>
+          <Box 
+            bg="rgba(30, 30, 45, 0.7)" 
+            borderRadius="xl" 
+            p={6} 
+            boxShadow="xl"
+          >
+            <Tabs.Root variant="line" colorScheme="purple" fitted defaultValue="create">
+              <Tabs.List mb="1em">
+                <Tabs.Trigger 
+                  value="create"
+                  _selected={{ color: 'white', borderColor: 'purple.400' }} 
+                  color="gray.300"
+                  fontWeight="bold"
+                >
+                  Create a Game
+                </Tabs.Trigger>
+                <Tabs.Trigger 
+                  value="join"
+                  _selected={{ color: 'white', borderColor: 'purple.400' }} 
+                  color="gray.300"
+                  fontWeight="bold"
+                >
+                  Join a Game
+                </Tabs.Trigger>
+              </Tabs.List>
+              
+              <Tabs.Content value="create" p={0}>
+                <CreateGame user={user} />
+              </Tabs.Content>
+              <Tabs.Content value="join" p={0}>
+                <Box className="mb-8">
+                  <h2 className="text-2xl font-bold text-white mb-4">My Active Games</h2>
+                  <div className="p-6 bg-gray-800 bg-opacity-50 rounded-xl text-center text-gray-400">
+                    No active games found. Join a game below!
+                  </div>
+                </Box>
+                <JoinGame user={user} />
+              </Tabs.Content>
+            </Tabs.Root>
+          </Box>
         </div>
       ) : (
         <div className="w-full max-w-6xl">
