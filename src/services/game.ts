@@ -10,16 +10,11 @@ import {
   arrayUnion,
   arrayRemove,
   Timestamp,
-  onSnapshot,
-  enableNetwork,
-  disableNetwork
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { nanoid } from 'nanoid';
 import type { Game, Player, Round, Prompt, GifSubmission } from '../types';
-
-// Enable network by default
-enableNetwork(db).catch(console.error);
 
 // Default prompts for the game
 const DEFAULT_PROMPTS: Prompt[] = [
@@ -35,15 +30,13 @@ const DEFAULT_PROMPTS: Prompt[] = [
   { id: 'p10', text: 'How I dance when no one is watching' }
 ];
 
-// Helper function to handle network errors
-const handleNetworkError = async (error: any) => {
-  console.error('Network error:', error);
-  if (error.code === 'failed-precondition' || error.code === 'unavailable') {
-    try {
-      await enableNetwork(db);
-    } catch (e) {
-      console.error('Failed to re-enable network:', e);
-    }
+// Helper function to handle errors
+const handleError = (error: any) => {
+  console.error('Firestore error:', error);
+  if (error.code === 'permission-denied') {
+    throw new Error('You do not have permission to perform this action. Please check your Firestore rules.');
+  } else if (error.code === 'unavailable') {
+    throw new Error('Firestore is currently unavailable. Please try again later.');
   }
   throw error;
 };
@@ -78,7 +71,7 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
     await setDoc(gameRef, newGame);
     return gameId;
   } catch (error) {
-    return handleNetworkError(error);
+    return handleError(error);
   }
 };
 
