@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Dice5, Gift } from 'lucide-react';
+import { Dice5, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
@@ -55,12 +55,16 @@ const CreateGame: React.FC<CreateGameProps> = ({ user }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="bg-black bg-opacity-80 rounded-xl p-8 shadow-lg backdrop-blur-sm">
-        <div className="flex justify-center mb-6">
-          <Gift size={48} className="text-pink-500" />
+      <div className="rounded-xl pb-4">
+        <div className="flex justify-center mb-0">
+          <img 
+            src="/images/bomb-icon.png" 
+            alt="Bomb Icon" 
+            className="w-32 h-32"
+          />
         </div>
         
-        <h2 className="text-2xl font-bold mb-6 text-center text-white">Create New Game</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center text-white">Create New Game</h2>
         
         <form onSubmit={handleCreateGame} className="space-y-4">
           <div className="relative">
