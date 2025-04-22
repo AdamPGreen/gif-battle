@@ -2,8 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
 import { 
   initializeFirestore, 
-  CACHE_SIZE_UNLIMITED, 
-  enableMultiTabIndexedDbPersistence,
+  CACHE_SIZE_UNLIMITED,
   connectFirestoreEmulator 
 } from 'firebase/firestore';
 import { getAnalytics, logEvent } from 'firebase/analytics';
@@ -26,11 +25,15 @@ const auth = getAuth(app);
 // Initialize Analytics in production only
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// Initialize Firestore with memory cache
+// Initialize Firestore with settings that use recommended cache configuration
+// instead of the deprecated enableMultiTabIndexedDbPersistence
 const db = initializeFirestore(app, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   experimentalForceLongPolling: true, // Use long polling instead of WebSockets
-  ignoreUndefinedProperties: true
+  ignoreUndefinedProperties: true,
+  localCache: {
+    lruGarbageCollection: true
+  }
 });
 
 // Check if we're in development environment
@@ -41,17 +44,6 @@ if (isLocalEnv) {
   console.log('Using Firebase emulators for local development');
   connectFirestoreEmulator(db, 'localhost', 8080);
   connectAuthEmulator(auth, 'http://localhost:9099');
-}
-
-// Try to enable multi-tab persistence (but don't crash if it fails)
-if (typeof window !== 'undefined') {
-  try {
-    enableMultiTabIndexedDbPersistence(db).catch(err => {
-      console.warn('Failed to enable persistence:', err);
-    });
-  } catch (err) {
-    console.warn('Failed to initialize persistence:', err);
-  }
 }
 
 const googleProvider = new GoogleAuthProvider();
@@ -66,4 +58,5 @@ const trackEvent = (eventName: string, eventParams = {}) => {
   }
 };
 
-export { auth, db, googleProvider, trackEvent, analytics, isLocalEnv };
+// Make sure to include all the original exports
+export { app, auth, db, googleProvider, trackEvent, analytics, isLocalEnv };
