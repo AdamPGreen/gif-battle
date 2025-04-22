@@ -20,17 +20,12 @@ import { db, app } from '../config/firebase';
 import { nanoid } from 'nanoid';
 import type { Game, Player, Round, Prompt, GifSubmission } from '../types';
 
-// Ensure every Firestore reference uses the correct database
-// This is a safety measure to explicitly use the gifbattle database
-// throughout this module, regardless of client defaults
-const DATABASE_ID = 'gifbattle';
-
-// Helper function to create a doc reference with the correct database ID
+// Helper function to create a doc reference
 const getDocRef = (collectionName: string, docId: string) => {
   return doc(db, collectionName, docId);
 };
 
-// Helper function to create a collection reference with the correct database ID
+// Helper function to create a collection reference
 const getCollectionRef = (collectionName: string) => {
   return collection(db, collectionName);
 };
@@ -187,10 +182,9 @@ const handleError = (error: any) => {
     throw new Error('Operation was interrupted. Please try again.');
   }
   
-  // Database not found errors
-  if (error.code === 'not-found' && error.message?.includes('database (default) does not exist')) {
-    console.error('Attempting to use default database instead of gifbattle. Explicitly targeting gifbattle.');
-    throw new Error('Database configuration error. Please refresh the page and try again.');
+  // Database errors
+  if (error.code === 'not-found') {
+    throw new Error('Resource not found. Please try again or verify the game ID.');
   }
   
   // Default error

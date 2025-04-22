@@ -19,8 +19,7 @@
   },
   "firestore": {
     "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json",
-    "database": "gifbattle"
+    "indexes": "firestore.indexes.json"
   },
   "functions": [
     {
