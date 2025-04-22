@@ -100,7 +100,10 @@ service cloud.firestore {
         isJudgeUpdatingPrompt(request, resource) ||
         
         // Condition 5: The current judge is starting the round
-        isJudgeStartingRound(request, resource)
+        isJudgeStartingRound(request, resource) ||
+        
+        // Condition 6: The current judge is selecting a winner
+        isJudgeSelectingWinner(request, resource)
       );
 
       // --- Helper Functions ---
@@ -199,6 +202,33 @@ service cloud.firestore {
           after.rounds.size() == before.rounds.size() &&
           before.rounds[currentRoundIdx].hasStarted == false &&
           after.rounds[currentRoundIdx].hasStarted == true;
+      }
+      
+      // Checks if the current judge is selecting a winner
+      function isJudgeSelectingWinner(req, res) {
+        let before = res.data;
+        let after = req.resource.data;
+        let changedKeys = after.diff(before).affectedKeys();
+        let userId = req.auth.uid;
+        let currentRoundIdx = before.currentRound - 1;
+        
+        // Check conditions for judge selecting a winner:
+        return
+          // 1. Only allow changes to 'rounds', 'players', 'status', and optionally 'updatedAt' fields
+          (changedKeys.hasOnly(['rounds', 'players', 'status']) || 
+           changedKeys.hasOnly(['rounds', 'players', 'status', 'updatedAt'])) &&
+          // 2. Make sure the current round index is valid
+          currentRoundIdx >= 0 && 
+          currentRoundIdx < before.rounds.size() &&
+          // 3. Make sure user is the judge for the current round
+          before.rounds[currentRoundIdx].judgeId == userId &&
+          // 4. Check that the winningSubmission is being set
+          after.rounds.size() == before.rounds.size() &&
+          before.rounds[currentRoundIdx].winningSubmission == null &&
+          after.rounds[currentRoundIdx].winningSubmission != null &&
+          // 5. Check that the round is being marked as complete
+          before.rounds[currentRoundIdx].isComplete == false &&
+          after.rounds[currentRoundIdx].isComplete == true;
       }
     }
 

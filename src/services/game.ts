@@ -459,8 +459,11 @@ export const selectWinner = async (gameId: string, submissionId: string) => {
     
     // Update the round
     const updatedRounds = [...gameData.rounds];
-    updatedRounds[gameData.currentRound - 1].winningSubmission = winningSubmission;
-    updatedRounds[gameData.currentRound - 1].isComplete = true;
+    updatedRounds[gameData.currentRound - 1] = {
+      ...updatedRounds[gameData.currentRound - 1],
+      winningSubmission: winningSubmission,
+      isComplete: true
+    };
     
     // Update player score
     const updatedPlayers = gameData.players.map(p => 
@@ -477,11 +480,14 @@ export const selectWinner = async (gameId: string, submissionId: string) => {
       gameStatus = 'completed';
     }
     
-    await updateDoc(gameRef, {
-      rounds: updatedRounds,
-      players: updatedPlayers,
-      status: gameStatus,
-      updatedAt: Date.now()
+    // Use a transaction to ensure atomicity
+    await runTransaction(db, async (transaction) => {
+      transaction.update(gameRef, {
+        rounds: updatedRounds,
+        players: updatedPlayers,
+        status: gameStatus,
+        updatedAt: serverTimestamp()
+      });
     });
     
     return winner;
