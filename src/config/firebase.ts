@@ -1,8 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
 import { 
-  initializeFirestore, 
-  CACHE_SIZE_UNLIMITED,
+  initializeFirestore,
   connectFirestoreEmulator 
 } from 'firebase/firestore';
 import { getAnalytics, logEvent } from 'firebase/analytics';
@@ -25,14 +24,13 @@ const auth = getAuth(app);
 // Initialize Analytics in production only
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// Initialize Firestore with settings that use recommended cache configuration
-// instead of the deprecated enableMultiTabIndexedDbPersistence
+// Initialize Firestore with recommended cache settings
 const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
   experimentalForceLongPolling: true, // Use long polling instead of WebSockets
   ignoreUndefinedProperties: true,
   localCache: {
-    lruGarbageCollection: true
+    lruGarbageCollection: true,
+    sizeBytes: 100000000 // Approximately 100MB cache size
   }
 });
 
