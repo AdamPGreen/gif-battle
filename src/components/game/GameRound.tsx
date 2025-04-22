@@ -353,7 +353,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     <div className="grid md:grid-cols-4 gap-6">
       <div className="md:col-span-3">
         <motion.div 
-          className="bg-black bg-opacity-90 backdrop-blur-sm border border-purple-600 rounded-xl p-6 shadow-lg mb-6"
+          className="bg-black bg-opacity-90 backdrop-blur-sm border border-purple-600 rounded-xl p-3 sm:p-6 shadow-lg mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -368,7 +368,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
           </div>
           
           {isJudge && !roundStarted ? (
-            <div className="bg-gray-800 p-6 rounded-lg mb-6">
+            <div className="bg-gray-800 p-4 sm:p-6 rounded-lg mb-6">
               <PromptCard onCustomPromptClick={() => setIsCustomPromptOpen(true)} />
               
               <motion.button
@@ -430,7 +430,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
               </form>
               
               <div className="mb-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto p-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-2 max-h-[400px] overflow-y-auto p-0 sm:p-2">
                   {loadingGifs && searchOffset === 0 ? (
                     <div className="col-span-full text-center py-4">
                       <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -443,14 +443,14 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                           <motion.div
                             key={gif.id}
                             onClick={() => handleSelectGif(gif)}
-                            className="aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
+                            className="relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
                             <img 
                               src={gif.images.fixed_height_small.url} 
                               alt="GIF search result"
-                              className="w-full h-full object-cover"
+                              className="w-full h-auto object-contain"
                             />
                           </motion.div>
                         ))}
@@ -488,14 +488,14 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                         <motion.div
                           key={gif.id}
                           onClick={() => handleSelectGif(gif)}
-                          className="aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
+                          className="relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
                           <img 
                             src={gif.images.fixed_height_small.url} 
                             alt="Trending GIF"
-                            className="w-full h-full object-cover"
+                            className="w-full h-auto object-contain"
                           />
                         </motion.div>
                       ))}
@@ -547,16 +547,16 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                   <p>Waiting for players to submit their GIFs...</p>
                 </div>
               ) : !allPlayersSubmitted ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                   {currentRound.submissions.map((submission) => (
                     <div 
                       key={submission.id}
-                      className="aspect-video bg-gray-800 rounded-lg overflow-hidden"
+                      className="bg-gray-800 rounded-lg overflow-hidden"
                     >
                       <img 
                         src={submission.gifUrl} 
                         alt="Player submission"
-                        className="w-full h-full object-contain"
+                        className="w-full h-auto object-contain"
                       />
                     </div>
                   ))}
@@ -565,7 +565,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                   {Array.from({ length: game.players.filter(p => p.isActive && !p.isJudge).length - currentRound.submissions.length }).map((_, i) => (
                     <div 
                       key={`placeholder-${i}`}
-                      className="aspect-video bg-gray-800 bg-opacity-50 rounded-lg flex items-center justify-center animate-pulse"
+                      className="bg-gray-800 bg-opacity-50 rounded-lg flex items-center justify-center animate-pulse min-h-[100px]"
                     >
                       <p className="text-gray-500 text-sm">Waiting...</p>
                     </div>
@@ -587,11 +587,11 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleSelectWinner(submission)}
                       >
-                        <div className="aspect-video">
+                        <div>
                           <img 
                             src={submission.gifUrl} 
                             alt="Player submission"
-                            className="w-full h-full object-contain"
+                            className="w-full h-auto object-contain"
                           />
                         </div>
                         <div className="p-2 text-sm text-center text-gray-300">
@@ -626,7 +626,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                     <img 
                       src={currentRound.winningSubmission?.gifUrl} 
                       alt="Winning submission"
-                      className="w-full object-contain"
+                      className="w-full h-auto object-contain"
                     />
                   </div>
                 </div>
@@ -678,7 +678,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
             exit={{ opacity: 0 }}
           >
             <motion.div 
-              className="bg-gray-900 rounded-xl p-6 w-full max-w-md"
+              className="bg-gray-900 rounded-xl px-4 py-8 sm:px-8 sm:py-16 w-full max-w-md"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
@@ -720,18 +720,18 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       <AnimatePresence>
         {isGifModalOpen && selectedGif && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div 
-              className="bg-gray-900 rounded-xl p-6 w-full max-w-xl"
+              className="bg-gray-900 rounded-xl px-4 py-8 sm:px-8 sm:py-16 w-full max-w-xl shadow-2xl"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
             >
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-3 sm:mb-4">
                 <h3 className="text-xl font-semibold">Preview</h3>
                 <button 
                   onClick={() => setIsGifModalOpen(false)}
@@ -741,11 +741,11 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                 </button>
               </div>
               
-              <div className="flex justify-center mb-6 bg-gray-800 p-4 rounded-lg">
+              <div className="flex justify-center mb-4 sm:mb-6 bg-gray-800 p-0 sm:p-0 rounded-lg">
                 <img 
                   src={selectedGif.images.original.url} 
                   alt="Selected GIF preview"
-                  className="max-h-[300px] object-contain"
+                  className="w-full h-auto object-contain rounded-md"
                 />
               </div>
               
