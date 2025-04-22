@@ -273,7 +273,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       gifId: selectedGif.id,
       gifUrl: selectedGif.images.original.url,
       playerId: user.id,
-      playerName: user.displayName || 'Anonymous',
+      playerName: currentPlayer.name,
       round: currentRound.id
     };
     

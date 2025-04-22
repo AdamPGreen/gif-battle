@@ -51,7 +51,7 @@ const InvitePage: React.FC = () => {
           await joinExistingGame(
             gameId, 
             user.id, 
-            user.displayName || 'Anonymous'
+            user.displayName as string
           );
           
           toast.success('Joined game successfully!');

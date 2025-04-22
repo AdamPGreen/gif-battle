@@ -26,7 +26,7 @@ const CreateGame: React.FC<CreateGameProps> = ({ user }) => {
     try {
       const gameId = await createNewGame(
         user.id, 
-        user.displayName || 'Anonymous', 
+        user.displayName as string, 
         gameName
       );
       

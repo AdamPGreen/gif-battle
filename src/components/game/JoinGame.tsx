@@ -49,7 +49,7 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
       await joinExistingGame(
         extractedGameId, 
         user.id, 
-        user.displayName || 'Anonymous'
+        user.displayName as string
       );
       
       toast.success('Joined game successfully!');
