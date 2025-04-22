@@ -16,9 +16,24 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, app } from '../config/firebase';
 import { nanoid } from 'nanoid';
 import type { Game, Player, Round, Prompt, GifSubmission } from '../types';
+
+// Ensure every Firestore reference uses the correct database
+// This is a safety measure to explicitly use the gifbattle database
+// throughout this module, regardless of client defaults
+const DATABASE_ID = 'gifbattle';
+
+// Helper function to create a doc reference with the correct database ID
+const getDocRef = (collectionName: string, docId: string) => {
+  return doc(db, collectionName, docId);
+};
+
+// Helper function to create a collection reference with the correct database ID
+const getCollectionRef = (collectionName: string) => {
+  return collection(db, collectionName);
+};
 
 // Default prompts for the game
 const DEFAULT_PROMPTS: Prompt[] = [
@@ -137,7 +152,7 @@ const RATE_LIMITS = {
 };
 
 // Helper function to check rate limits
-const checkRateLimit = (action) => {
+const checkRateLimit = (action: 'create' | 'join' | 'submit') => {
   const now = Date.now();
   const lastRequest = lastRequestTimestamps[action];
   
@@ -172,6 +187,12 @@ const handleError = (error: any) => {
     throw new Error('Operation was interrupted. Please try again.');
   }
   
+  // Database not found errors
+  if (error.code === 'not-found' && error.message?.includes('database (default) does not exist')) {
+    console.error('Attempting to use default database instead of gifbattle. Explicitly targeting gifbattle.');
+    throw new Error('Database configuration error. Please refresh the page and try again.');
+  }
+  
   // Default error
   throw new Error('An error occurred. Please try again later.');
 };
@@ -184,7 +205,8 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
     const gameId = nanoid(8);
     console.log(`Creating game with ID: ${gameId} in database: gifbattle`);
     
-    const gameRef = doc(db, 'games', gameId);
+    // Use our helper function for consistent database ID
+    const gameRef = getDocRef('games', gameId);
     
     const newGame: Game = {
       id: gameId,
@@ -223,20 +245,23 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
     
     console.log(`Game created successfully with ID: ${gameId}`);
     return gameId;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating game:', error);
-    if (error.code === 'permission-denied') {
-      console.error('Permission denied. Check Firestore rules.');
-    } else if (error.code === 'unavailable') {
-      console.error('Firestore is currently unavailable');
-    } else if (error.code === 'resource-exhausted') {
-      console.error('Quota exceeded');
-    } else if (error.code === 'cancelled') {
-      console.error('Operation was cancelled');
-    } else if (error.code === 'deadline-exceeded') {
-      console.error('Deadline exceeded on operation');
-    } else if (error.message) {
-      console.error(`Error message: ${error.message}`);
+    if (typeof error === 'object' && error !== null) {
+      const err = error as { code?: string; message?: string };
+      if (err.code === 'permission-denied') {
+        console.error('Permission denied. Check Firestore rules.');
+      } else if (err.code === 'unavailable') {
+        console.error('Firestore is currently unavailable');
+      } else if (err.code === 'resource-exhausted') {
+        console.error('Quota exceeded');
+      } else if (err.code === 'cancelled') {
+        console.error('Operation was cancelled');
+      } else if (err.code === 'deadline-exceeded') {
+        console.error('Deadline exceeded on operation');
+      } else if (err.message) {
+        console.error(`Error message: ${err.message}`);
+      }
     }
     
     return handleError(error);
@@ -248,7 +273,7 @@ export const joinGame = async (gameId: string, player: Player) => {
     // Check rate limit
     checkRateLimit('join');
     
-    const gameRef = doc(db, 'games', gameId);
+    const gameRef = getDocRef('games', gameId);
     
     return await runTransaction(db, async (transaction) => {
       const gameDoc = await transaction.get(gameRef);
@@ -561,7 +586,7 @@ export const setCustomPrompt = async (gameId: string, promptText: string) => {
 
 export const getGameById = async (gameId: string) => {
   try {
-    const gameRef = doc(db, 'games', gameId);
+    const gameRef = getDocRef('games', gameId);
     const gameDoc = await getDoc(gameRef);
     
     if (!gameDoc.exists()) {
@@ -576,7 +601,7 @@ export const getGameById = async (gameId: string) => {
 };
 
 export const subscribeToGame = (gameId: string, callback: (game: Game) => void) => {
-  const gameRef = doc(db, 'games', gameId);
+  const gameRef = getDocRef('games', gameId);
   
   return onSnapshot(gameRef, (doc) => {
     if (doc.exists()) {
