@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, Crown, Star } from 'lucide-react';
+import { User } from 'lucide-react';
 import type { Game, Player } from '../../types';
 
 interface PlayersListProps {
@@ -23,7 +23,7 @@ const PlayersList: React.FC<PlayersListProps> = ({ game, currentPlayer }) => {
       <h2 className="text-xl font-semibold mb-4">Players</h2>
       
       <div className="space-y-2">
-        {activePlayers.map((player) => (
+        {activePlayers.map((player, index) => (
           <motion.div 
             key={player.id}
             className={`flex items-center gap-3 p-3 rounded-lg ${
@@ -37,7 +37,12 @@ const PlayersList: React.FC<PlayersListProps> = ({ game, currentPlayer }) => {
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+            {/* Rank position */}
+            <div className="flex-shrink-0 w-6 font-bold text-center text-gray-400">
+              #{index + 1}
+            </div>
+            
+            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
               player.isJudge 
                 ? 'bg-gradient-to-br from-yellow-500 to-orange-600'
                 : 'bg-gradient-to-br from-pink-500 to-purple-600'
@@ -45,26 +50,25 @@ const PlayersList: React.FC<PlayersListProps> = ({ game, currentPlayer }) => {
               <User size={16} className="text-white" />
             </div>
             
-            <div className="flex-grow">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{player.name}</span>
-                {player.isHost && (
-                  <Crown size={14} className="text-yellow-500" />
-                )}
-                {player.isJudge && (
-                  <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded-full">Judge</span>
-                )}
+            <div className="flex-grow min-w-0">
+              <div className="flex items-center flex-wrap gap-2">
+                <span className="font-medium truncate">{player.name}</span>
+                
+                <div className="flex flex-wrap gap-1">
+                  {player.isJudge && (
+                    <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded-full">Judge</span>
+                  )}
+                  
+                  {player.id === currentPlayer.id && (
+                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">You</span>
+                  )}
+                </div>
               </div>
               
-              <div className="flex items-center gap-1 text-gray-400 text-sm">
-                <Star size={14} className="text-yellow-500" />
+              <div className="text-gray-400 text-sm">
                 <span>Score: {player.score}</span>
               </div>
             </div>
-            
-            {player.id === currentPlayer.id && (
-              <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">You</span>
-            )}
           </motion.div>
         ))}
       </div>
