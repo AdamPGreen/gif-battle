@@ -11,6 +11,7 @@
       "port": 4000
     },
     "dataconnect": {
+      "port": 9499,
       "dataDir": "dataconnect/.dataconnect/pgliteData"
     }
   },

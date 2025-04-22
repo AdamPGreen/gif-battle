@@ -1,35 +1,81 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write their own data
+
+    // Users: Basic self-management
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
+      // Add any other user-specific rules here
     }
-    
-    // Game rules - more granular control
+
+    // Games: Core game logic rules
     match /games/{gameId} {
-      // Anyone can read a game
+      // Anyone authenticated can read game details
       allow read: if request.auth != null;
-      
-      // Only the host can create a game
-      allow create: if request.auth != null && request.resource.data.hostId == request.auth.uid;
-      
-      // Only the host can update most game properties
+
+      // Only an authenticated user creating a game where they are the host
+      allow create: if request.auth != null
+                       && request.resource.data.hostId == request.auth.uid;
+
+      // Update rules: Handle host actions, joining, and playing
       allow update: if request.auth != null && (
-        // Host can update anything
+        // Condition 1: The user is the host (allow broad updates)
         resource.data.hostId == request.auth.uid ||
-        // Players can submit to their own rounds
-        (request.resource.data.rounds.size() > 0 && 
-         isPlayerSubmittingToOwnRound(resource.data, request.auth.uid))
+
+        // Condition 2: A player is joining the game
+        isPlayerJoining(request, resource) ||
+
+        // Condition 3: A player is submitting to their round
+        isPlayerSubmittingRound(request, resource)
       );
-    }
-    
-    // Helper function to check if a player is submitting to their own round
-    function isPlayerSubmittingToOwnRound(oldData, userId) {
-      return oldData.players.hasAny([{'id': userId}]) && 
-             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rounds']);
+
+      // --- Helper Functions ---
+
+      // Checks if the request corresponds to a player joining the game
+      function isPlayerJoining(req, res) {
+        // Get the data before (res.data) and after (req.resource.data) the potential update
+        let before = res.data;
+        let after = req.resource.data;
+        // Identify the fields that changed
+        let changedKeys = after.diff(before).affectedKeys();
+        // The player being added (will be the last element in the 'after' state)
+        // Ensure there's at least one player before accessing index 0
+        let newPlayer = before.players.size() == 0 ? after.players[0] : after.players[before.players.size()];
+
+        // Check all conditions for a valid join operation:
+        return
+          // 1. Only 'players' and potentially 'updatedAt' fields are allowed to change
+          (changedKeys.hasOnly(['players']) || changedKeys.hasOnly(['players', 'updatedAt'])) &&
+          // 2. Exactly one player is being added
+          (after.players.size() == before.players.size() + 1) &&
+          // 3. The ID of the player being added matches the authenticated user
+          (newPlayer.id == req.auth.uid) &&
+          // 4. Validate the structure of the player object being added
+          (newPlayer.name is string && newPlayer.name.size() > 0) && // Ensure name is provided
+          (newPlayer.isHost == false) && // Cannot join as host
+          (newPlayer.isJudge == false) && // Cannot join as judge initially
+          (newPlayer.score == 0) &&       // Initial score must be 0
+          (newPlayer.isActive == true);  // Player starts as active
+      }
+
+      // Checks if the request corresponds to a player submitting to their round
+      function isPlayerSubmittingRound(req, res) {
+         let before = res.data;
+         let after = req.resource.data;
+         let changedKeys = after.diff(before).affectedKeys();
+         let userId = req.auth.uid;
+
+         // Check conditions for submitting a round:
+         return
+           // 1. User must already be in the game's player list (using hasAny)
+           before.players.hasAny([{'id': userId}]) &&
+           // 2. Only 'rounds' and 'updatedAt' fields are allowed to change
+           (changedKeys.hasOnly(['rounds', 'updatedAt']) || changedKeys.hasOnly(['rounds'])) &&
+           // 3. The rounds array must be growing (adding data)
+           after.rounds.size() > before.rounds.size();
+           // Add more specific round validation here if needed
+      }
     }
   }
 }

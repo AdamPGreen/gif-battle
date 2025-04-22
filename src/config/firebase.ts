@@ -16,8 +16,7 @@ const firebaseConfig = {
   storageBucket: "gif-battle-bceab.firebasestorage.app",
   messagingSenderId: "550435143039",
   appId: "1:550435143039:web:8320bf8623ca670c282e4a",
-  databaseURL: "https://gif-battle-bceab.firebaseio.com",
-  databaseId: "gifbattle"
+  databaseURL: "https://gif-battle-bceab.firebaseio.com"
 };
 
 // Initialize Firebase
@@ -37,10 +36,10 @@ const firestoreSettings: FirestoreSettings = {
 const isLocalEnv = process.env.NODE_ENV === 'development';
 
 // Initialize Firestore with appropriate settings
-const db = getFirestore(app, 'gifbattle');
+const db = getFirestore(app);
 
 // Log successful Firestore initialization
-console.log('Successfully configured Firestore to use gifbattle database');
+console.log('Successfully configured Firestore using default database');
 
 // Connect to Firebase emulators in development environment
 if (isLocalEnv) {
