@@ -197,7 +197,7 @@ export const createGame = async (hostId: string, hostName: string, gameName: str
     checkRateLimit('create');
     
     const gameId = nanoid(8);
-    console.log(`Creating game with ID: ${gameId} in database: gifbattle`);
+    console.log(`Creating game with ID: ${gameId}`);
     
     // Use our helper function for consistent database ID
     const gameRef = getDocRef('games', gameId);
