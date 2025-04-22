@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageCircle, 
@@ -11,7 +11,9 @@ import {
   Sparkles,
   PlayCircle,
   Wand2,
-  ChevronDown
+  ChevronDown,
+  X,
+  Zap
 } from 'lucide-react';
 import useGameStore from '../../store/gameStore';
 import { useGifs } from '../../hooks/useGifs';
@@ -51,6 +53,11 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const [isCustomPromptOpen, setIsCustomPromptOpen] = useState(false);
   const [searchOffset, setSearchOffset] = useState(0);
   const [displayedSearchResults, setDisplayedSearchResults] = useState<any[]>([]);
+  const [isGifModalOpen, setIsGifModalOpen] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  const gridEndRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
   
   const currentRound = game.rounds[game.currentRound - 1];
   const isJudge = currentPlayer.isJudge;
@@ -68,13 +75,14 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     }
   };
   
-  const handleLoadMoreGifs = () => {
-    if (loadingGifs) return; // Prevent multiple clicks while loading
+  const loadMoreGifs = useCallback(() => {
+    if (loadingGifs || !searchTerm || isLoadingMore) return;
     
+    setIsLoadingMore(true);
     const newOffset = searchOffset + 20;
     setSearchOffset(newOffset);
     searchForGifs(searchTerm, 20, newOffset);
-  };
+  }, [loadingGifs, searchTerm, searchOffset, searchForGifs, isLoadingMore]);
   
   useEffect(() => {
     if (searchOffset === 0) {
@@ -96,10 +104,40 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       // Convert map values back to array
       setDisplayedSearchResults(Array.from(uniqueGifs.values()));
     }
+    setIsLoadingMore(false);
   }, [searchResults, searchOffset]);
+  
+  // Setup intersection observer for infinite scroll
+  useEffect(() => {
+    const options = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.5
+    };
+    
+    const handleObserver = (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && searchTerm && displayedSearchResults.length > 0) {
+        loadMoreGifs();
+      }
+    };
+    
+    observerRef.current = new IntersectionObserver(handleObserver, options);
+    
+    if (gridEndRef.current) {
+      observerRef.current.observe(gridEndRef.current);
+    }
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [searchTerm, displayedSearchResults.length, loadMoreGifs]);
   
   const handleSelectGif = (gif: any) => {
     setSelectedGif(gif);
+    setIsGifModalOpen(true);
   };
   
   const handleSubmitGif = async () => {
@@ -121,6 +159,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       await submitGifToGame(game.id, submission);
       toast.success('GIF submitted!');
       setSelectedGif(null);
+      setIsGifModalOpen(false);
     } catch (error: any) {
       console.error('Error submitting GIF:', error);
       toast.error(error.message || 'Failed to submit GIF');
@@ -306,7 +345,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
               </form>
               
               <div className="mb-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto p-2">
                   {loadingGifs && searchOffset === 0 ? (
                     <div className="col-span-full text-center py-4">
                       <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -314,23 +353,31 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                     </div>
                   ) : searchTerm ? (
                     displayedSearchResults.length > 0 ? (
-                      displayedSearchResults.map((gif) => (
-                        <motion.div
-                          key={gif.id}
-                          onClick={() => handleSelectGif(gif)}
-                          className={`aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 ${
-                            selectedGif?.id === gif.id ? 'border-cyan-400 ring-2 ring-cyan-400' : 'border-transparent'
-                          }`}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                      <>
+                        {displayedSearchResults.map((gif) => (
+                          <motion.div
+                            key={gif.id}
+                            onClick={() => handleSelectGif(gif)}
+                            className="aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <img 
+                              src={gif.images.fixed_height_small.url} 
+                              alt="GIF search result"
+                              className="w-full h-full object-cover"
+                            />
+                          </motion.div>
+                        ))}
+                        <div 
+                          ref={gridEndRef} 
+                          className="col-span-full h-4 flex justify-center items-center"
                         >
-                          <img 
-                            src={gif.images.fixed_height_small.url} 
-                            alt="GIF search result"
-                            className="w-full h-full object-cover"
-                          />
-                        </motion.div>
-                      ))
+                          {isLoadingMore && (
+                            <div className="w-6 h-6 border-3 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                          )}
+                        </div>
+                      </>
                     ) : (
                       <div className="col-span-full text-center py-4 text-gray-400">
                         <p>No GIFs found for "{searchTerm}"</p>
@@ -341,9 +388,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                       <motion.div
                         key={gif.id}
                         onClick={() => handleSelectGif(gif)}
-                        className={`aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 ${
-                          selectedGif?.id === gif.id ? 'border-cyan-400 ring-2 ring-cyan-400' : 'border-transparent'
-                        }`}
+                        className="aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -356,67 +401,6 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                     ))
                   )}
                 </div>
-                
-                {searchTerm && displayedSearchResults.length > 0 && (
-                  <div className="flex justify-center mt-3">
-                    <motion.button
-                      onClick={handleLoadMoreGifs}
-                      className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg flex items-center gap-2 transition-all"
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                      disabled={loadingGifs}
-                    >
-                      {loadingGifs ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Loading more...</span>
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown size={16} />
-                          <span>Load More GIFs</span>
-                        </>
-                      )}
-                    </motion.button>
-                  </div>
-                )}
-              </div>
-              
-              {selectedGif && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-2">Selected GIF:</h3>
-                  <div className="max-w-sm mx-auto">
-                    <div className="aspect-video rounded-lg overflow-hidden">
-                      <img 
-                        src={selectedGif.images.fixed_height.url} 
-                        alt="Selected GIF"
-                        className="w-full h-full object-contain bg-gray-800"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-center">
-                <motion.button
-                  onClick={handleSubmitGif}
-                  className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-medium rounded-lg shadow-lg flex items-center gap-2 hover:from-cyan-700 hover:to-blue-700 disabled:opacity-70 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loading || !selectedGif}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Gift size={20} />
-                      <span>Submit GIF</span>
-                    </>
-                  )}
-                </motion.button>
               </div>
             </div>
           )}
@@ -626,6 +610,63 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* GIF Preview Modal */}
+      <AnimatePresence>
+        {isGifModalOpen && selectedGif && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="bg-gray-900 rounded-xl p-6 w-full max-w-xl"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">Preview</h3>
+                <button 
+                  onClick={() => setIsGifModalOpen(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex justify-center mb-6 bg-gray-800 p-4 rounded-lg">
+                <img 
+                  src={selectedGif.images.original.url} 
+                  alt="Selected GIF preview"
+                  className="max-h-[300px] object-contain"
+                />
+              </div>
+              
+              <motion.button
+                onClick={handleSubmitGif}
+                className="w-full px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-medium rounded-lg shadow-lg flex items-center justify-center gap-2 hover:from-cyan-700 hover:to-blue-700 disabled:opacity-70 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap size={20} />
+                    <span>Submit This GIF</span>
+                  </>
+                )}
+              </motion.button>
             </motion.div>
           </motion.div>
         )}
