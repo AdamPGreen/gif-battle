@@ -81,11 +81,6 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({ game, isHost, currentPlayer }
                     Host
                   </span>
                 )}
-                {player.id === currentPlayer.id && (
-                  <span className="px-2 py-1 text-xs bg-blue-500 text-white rounded-full">
-                    You
-                  </span>
-                )}
               </div>
             ))}
           </div>

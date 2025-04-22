@@ -58,10 +58,6 @@ const PlayersList: React.FC<PlayersListProps> = ({ game, currentPlayer }) => {
                   {player.isJudge && (
                     <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded-full">Judge</span>
                   )}
-                  
-                  {player.id === currentPlayer.id && (
-                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">You</span>
-                  )}
                 </div>
               </div>
               
