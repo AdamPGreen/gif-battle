@@ -71,7 +71,7 @@ const InvitePage: React.FC = () => {
         >
           <div className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 flex items-center justify-center gap-3 mb-4">
             <Gift size={48} className="text-purple-500" />
-            <span>GIF Battle</span>
+            <span className="glitch-text">GIF BATTLE</span>
           </div>
         </motion.div>
         

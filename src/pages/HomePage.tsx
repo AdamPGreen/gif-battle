@@ -176,10 +176,10 @@ const HomePage: React.FC = () => {
                   repeatDelay: 5
                 }}
               >
-                <Zap size={64} className="text-yellow-400" />
+                {/* Removed Zap icon */}
               </motion.div>
               <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400">
-                GIF Battle
+                GIF BATTLE
               </span>
             </div>
             <p className="text-gray-300 max-w-2xl mx-auto">
