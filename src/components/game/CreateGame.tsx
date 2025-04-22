@@ -71,16 +71,25 @@ const CreateGame: React.FC<CreateGameProps> = ({ user }) => {
               onChange={(e) => setGameName(e.target.value)}
               className="w-full py-3 px-4 text-gray-200 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            <motion.button
-              type="button"
-              onClick={handleRandomName}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-cyan-400 hover:text-cyan-300"
-              whileHover={{ scale: 1.1, rotate: 15 }}
-              whileTap={{ scale: 0.9 }}
-              title="Generate Random Name"
-            >
-              <Dice5 size={20} />
-            </motion.button>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center">
+              <motion.button
+                type="button"
+                onClick={handleRandomName}
+                className="text-cyan-400 hover:text-cyan-300"
+                whileHover={{ 
+                  rotate: [0, 15, -15, 0], 
+                  scale: 1.2,
+                  transition: {
+                    rotate: { repeat: Infinity, duration: 0.5 },
+                    scale: { duration: 0.2 }
+                  }
+                }}
+                whileTap={{ scale: 0.9 }}
+                title="Generate Random Name"
+              >
+                <Dice5 size={20} />
+              </motion.button>
+            </div>
           </div>
           
           <motion.button

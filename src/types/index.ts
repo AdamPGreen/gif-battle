@@ -28,6 +28,7 @@ export interface Round {
   submissions: GifSubmission[];
   winningSubmission?: GifSubmission;
   isComplete: boolean;
+  hasStarted: boolean;
 }
 
 export interface Player {

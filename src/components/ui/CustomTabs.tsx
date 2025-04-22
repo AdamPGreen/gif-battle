@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface TabData {
   label: string;
@@ -15,24 +16,46 @@ const CustomTabs: React.FC<CustomTabsProps> = ({ tabs, initialTabIndex = 0 }) =>
 
   return (
     <div className="mb-6">
-      <div className="flex rounded-md bg-gray-900 p-1 shadow-sm border border-gray-800">
-        {tabs.map((tab, index) => (
-          <button
-            key={tab.label}
-            className={`flex-1 rounded-md px-4 py-3 text-center font-medium transition-all duration-200
-              ${activeTabIndex === index 
-                ? 'bg-gray-800 text-white shadow-[0_0_10px_rgba(236,72,153,0.3)] border border-gray-700' 
-                : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
-              }`}
-            onClick={() => setActiveTabIndex(index)}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex p-1 bg-black/30 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden">
+          {tabs.map((tab, index) => (
+            <motion.button
+              key={tab.label}
+              className={`relative px-10 py-3 font-medium text-center transition-all duration-300
+                ${activeTabIndex === index 
+                  ? 'text-white' 
+                  : 'text-gray-400 hover:text-white'
+                }`}
+              onClick={() => setActiveTabIndex(index)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {activeTabIndex === index && (
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-r from-purple-600/80 via-pink-500/80 to-cyan-500/80 rounded-lg"
+                  layoutId="activeTab"
+                  initial={false}
+                  transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+                  style={{ 
+                    boxShadow: '0 0 15px rgba(162, 89, 255, 0.5)'
+                  }}
+                />
+              )}
+              <span className="relative z-10">{tab.label}</span>
+            </motion.button>
+          ))}
+        </div>
       </div>
-      <div className="mt-4">
+      <motion.div 
+        className="mt-4"
+        key={activeTabIndex}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -5 }}
+        transition={{ duration: 0.3 }}
+      >
         {tabs[activeTabIndex]?.content}
-      </div>
+      </motion.div>
     </div>
   );
 };

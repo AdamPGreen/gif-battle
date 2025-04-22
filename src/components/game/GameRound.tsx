@@ -5,10 +5,13 @@ import {
   Search, 
   ThumbsUp, 
   Gift, 
-  Timer, 
   UserCheck,
   RefreshCw,
-  Trophy
+  Trophy,
+  Sparkles,
+  PlayCircle,
+  Wand2,
+  ChevronDown
 } from 'lucide-react';
 import useGameStore from '../../store/gameStore';
 import { useGifs } from '../../hooks/useGifs';
@@ -29,6 +32,8 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     selectWinningGif, 
     startNextGameRound,
     setCustomGamePrompt,
+    regenerateGamePrompt,
+    startCurrentGameRound,
     loading 
   } = useGameStore();
   
@@ -44,19 +49,54 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [customPrompt, setCustomPrompt] = useState('');
   const [isCustomPromptOpen, setIsCustomPromptOpen] = useState(false);
+  const [searchOffset, setSearchOffset] = useState(0);
+  const [displayedSearchResults, setDisplayedSearchResults] = useState<any[]>([]);
   
   const currentRound = game.rounds[game.currentRound - 1];
   const isJudge = currentPlayer.isJudge;
   const hasSubmitted = currentRound.submissions.some(s => s.playerId === currentPlayer.id);
   const allPlayersSubmitted = currentRound.submissions.length === game.players.filter(p => p.isActive && !p.isJudge).length;
   const roundComplete = currentRound.isComplete;
+  const roundStarted = currentRound.hasStarted;
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
+      setSearchOffset(0);
+      setDisplayedSearchResults([]);
       searchForGifs(searchTerm);
     }
   };
+  
+  const handleLoadMoreGifs = () => {
+    if (loadingGifs) return; // Prevent multiple clicks while loading
+    
+    const newOffset = searchOffset + 20;
+    setSearchOffset(newOffset);
+    searchForGifs(searchTerm, 20, newOffset);
+  };
+  
+  useEffect(() => {
+    if (searchOffset === 0) {
+      setDisplayedSearchResults(searchResults);
+    } else if (searchResults.length > 0) {
+      // Use a Map to track unique GIFs by ID to avoid duplicates
+      const uniqueGifs = new Map();
+      
+      // Add existing results to map
+      displayedSearchResults.forEach(gif => {
+        uniqueGifs.set(gif.id, gif);
+      });
+      
+      // Add new results, overwriting any duplicates
+      searchResults.forEach(gif => {
+        uniqueGifs.set(gif.id, gif);
+      });
+      
+      // Convert map values back to array
+      setDisplayedSearchResults(Array.from(uniqueGifs.values()));
+    }
+  }, [searchResults, searchOffset]);
   
   const handleSelectGif = (gif: any) => {
     setSelectedGif(gif);
@@ -109,6 +149,26 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     }
   };
   
+  const handleRegeneratePrompt = async () => {
+    try {
+      await regenerateGamePrompt(game.id);
+      toast.success('Generated a new prompt!');
+    } catch (error: any) {
+      console.error('Error regenerating prompt:', error);
+      toast.error(error.message || 'Failed to regenerate prompt');
+    }
+  };
+  
+  const handleStartRound = async () => {
+    try {
+      await startCurrentGameRound(game.id);
+      toast.success('Round started!');
+    } catch (error: any) {
+      console.error('Error starting round:', error);
+      toast.error(error.message || 'Failed to start round');
+    }
+  };
+  
   const handleSubmitCustomPrompt = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -144,38 +204,90 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                 {isJudge ? "You're the judge this round!" : "Submit your best GIF!"}
               </p>
             </div>
-            
-            <div className="flex items-center gap-2 mt-2 sm:mt-0">
-              <Timer size={18} className="text-cyan-400" />
-              <span className="text-sm">Time remaining: 2:00</span>
-            </div>
           </div>
           
-          <div className="bg-gray-800 p-4 rounded-lg mb-6">
-            <div className="flex justify-between items-start">
-              <div className="flex items-start gap-2">
-                <MessageCircle size={24} className="text-pink-500 mt-1" />
+          {isJudge && !roundStarted ? (
+            <div className="bg-gray-800 p-6 rounded-lg mb-6">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Wand2 size={20} className="text-cyan-400" />
+                <span>Choose a Prompt</span>
+              </h3>
+              
+              <div className="bg-gray-900 p-4 rounded-lg mb-4">
                 <div>
-                  <p className="text-gray-400 text-sm">The prompt is:</p>
+                  <p className="text-gray-400 text-sm">Current prompt:</p>
                   <p className="text-xl font-medium">{currentRound.prompt.text}</p>
                 </div>
               </div>
               
-              {isJudge && !roundComplete && (
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <motion.button
+                  onClick={handleRegeneratePrompt}
+                  className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={loading}
+                >
+                  <Sparkles size={18} />
+                  <span>Generate New Prompt</span>
+                </motion.button>
+                
                 <motion.button
                   onClick={() => setIsCustomPromptOpen(true)}
-                  className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={loading}
                 >
-                  <RefreshCw size={14} />
-                  Change Prompt
+                  <MessageCircle size={18} />
+                  <span>Create Custom Prompt</span>
                 </motion.button>
-              )}
+              </div>
+              
+              <motion.button
+                onClick={handleStartRound}
+                className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg flex items-center justify-center gap-2"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Starting round...</span>
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle size={20} />
+                    <span>Start Round</span>
+                  </>
+                )}
+              </motion.button>
             </div>
-          </div>
+          ) : roundStarted ? (
+            <div className="bg-gray-800 p-4 rounded-lg mb-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-gray-400 text-sm">The prompt is:</p>
+                  <p className="text-xl font-medium">{currentRound.prompt.text}</p>
+                </div>
+                
+                {isJudge && !roundComplete && (
+                  <motion.button
+                    onClick={() => setIsCustomPromptOpen(true)}
+                    className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <RefreshCw size={14} />
+                    Change Prompt
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          ) : null}
           
-          {!isJudge && !hasSubmitted && !roundComplete && (
+          {!isJudge && !hasSubmitted && !roundComplete && roundStarted && (
             <div>
               <form onSubmit={handleSearch} className="mb-4 relative">
                 <input
@@ -193,16 +305,16 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                 </button>
               </form>
               
-              <div className="mb-6">
+              <div className="mb-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2">
-                  {loadingGifs ? (
+                  {loadingGifs && searchOffset === 0 ? (
                     <div className="col-span-full text-center py-4">
                       <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
                       <p className="mt-2 text-gray-400">Loading GIFs...</p>
                     </div>
                   ) : searchTerm ? (
-                    searchResults.length > 0 ? (
-                      searchResults.map((gif) => (
+                    displayedSearchResults.length > 0 ? (
+                      displayedSearchResults.map((gif) => (
                         <motion.div
                           key={gif.id}
                           onClick={() => handleSelectGif(gif)}
@@ -244,6 +356,30 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                     ))
                   )}
                 </div>
+                
+                {searchTerm && displayedSearchResults.length > 0 && (
+                  <div className="flex justify-center mt-3">
+                    <motion.button
+                      onClick={handleLoadMoreGifs}
+                      className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg flex items-center gap-2 transition-all"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={loadingGifs}
+                    >
+                      {loadingGifs ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Loading more...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown size={16} />
+                          <span>Load More GIFs</span>
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                )}
               </div>
               
               {selectedGif && (
@@ -285,7 +421,19 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
             </div>
           )}
           
-          {!isJudge && hasSubmitted && !roundComplete && (
+          {!isJudge && !roundStarted && (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 text-purple-500">
+                <Wand2 className="w-full h-full animate-pulse" />
+              </div>
+              <h3 className="text-xl font-medium mb-2">Waiting for the judge to start the round</h3>
+              <p className="text-gray-400">
+                The judge is currently choosing a prompt for this round.
+              </p>
+            </div>
+          )}
+          
+          {!isJudge && hasSubmitted && !roundComplete && roundStarted && (
             <div className="text-center py-8">
               <motion.div
                 className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
@@ -300,7 +448,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
             </div>
           )}
           
-          {isJudge && !roundComplete && (
+          {isJudge && !roundComplete && roundStarted && (
             <div>
               <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <UserCheck size={20} className="text-cyan-400" />
@@ -340,25 +488,29 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                 </div>
               ) : (
                 <div>
-                  <p className="mb-4 text-center font-medium">All players have submitted! Choose the winning GIF:</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Trophy size={20} className="text-yellow-500" />
+                    <span>Choose a Winner</span>
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {currentRound.submissions.map((submission) => (
-                      <motion.div 
+                      <motion.div
                         key={submission.id}
-                        className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-cyan-400 transition-all"
+                        className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-cyan-400"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleSelectWinner(submission)}
                       >
-                        <img 
-                          src={submission.gifUrl} 
-                          alt="Player submission"
-                          className="w-full aspect-video object-contain"
-                        />
-                        <div className="p-3 border-t border-gray-700">
-                          <button className="w-full py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium">
-                            Select Winner
-                          </button>
+                        <div className="aspect-video">
+                          <img 
+                            src={submission.gifUrl} 
+                            alt="Player submission"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="p-2 text-sm text-center text-gray-300">
+                          Click to select as winner
                         </div>
                       </motion.div>
                     ))}
@@ -369,43 +521,32 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
           )}
           
           {roundComplete && (
-            <div>
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Trophy size={20} className="text-yellow-500" />
-                <span>Round Results</span>
-              </h3>
-              
-              <div className="text-center mb-6">
-                <p className="mb-2">The winning GIF for the prompt:</p>
-                <p className="text-xl font-medium mb-4">"{currentRound.prompt.text}"</p>
-                
-                <div className="max-w-md mx-auto mb-4">
-                  <motion.div 
-                    className="bg-gray-800 rounded-lg overflow-hidden border-4 border-yellow-500"
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-                  >
+            <div className="text-center py-6">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="mb-6">
+                  <h3 className="text-2xl font-semibold mb-2 flex items-center justify-center gap-2">
+                    <Trophy size={24} className="text-yellow-500" />
+                    <span>Round Winner</span>
+                  </h3>
+                  
+                  <p className="text-cyan-400 mb-4">
+                    <span className="font-medium">{currentRound.winningSubmission?.playerName}</span> won this round!
+                  </p>
+                  
+                  <div className="max-w-md mx-auto bg-gray-800 rounded-lg overflow-hidden">
                     <img 
                       src={currentRound.winningSubmission?.gifUrl} 
-                      alt="Winning GIF"
-                      className="w-full aspect-video object-contain"
+                      alt="Winning submission"
+                      className="w-full object-contain"
                     />
-                  </motion.div>
+                  </div>
                 </div>
                 
-                <p className="text-lg font-semibold mb-1">
-                  Submitted by: 
-                  <span className="text-cyan-400 ml-2">
-                    {currentRound.winningSubmission?.playerName}
-                  </span>
-                </p>
-                
-                <p className="text-gray-400 mb-6">
-                  +1 point
-                </p>
-                
-                {isJudge && (
+                {isJudge && game.currentRound < game.maxRounds && (
                   <motion.button
                     onClick={handleNextRound}
                     className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg shadow-lg flex items-center gap-2 mx-auto hover:from-purple-700 hover:to-pink-700 disabled:opacity-70 disabled:cursor-not-allowed"
@@ -432,7 +573,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                     Waiting for the judge to start the next round...
                   </p>
                 )}
-              </div>
+              </motion.div>
             </div>
           )}
         </motion.div>
@@ -446,45 +587,42 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       <AnimatePresence>
         {isCustomPromptOpen && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div 
-              className="bg-gray-900 rounded-xl border border-purple-600 p-6 max-w-md w-full"
+              className="bg-gray-900 rounded-xl p-6 w-full max-w-md"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
             >
-              <h3 className="text-xl font-semibold mb-4">Set Custom Prompt</h3>
+              <h3 className="text-xl font-semibold mb-4">Create Custom Prompt</h3>
               
               <form onSubmit={handleSubmitCustomPrompt}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Enter your prompt:
-                  </label>
-                  <textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    className="w-full h-24 p-3 text-gray-200 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="e.g., When you realize you forgot to turn in your assignment"
-                  />
-                </div>
+                <textarea
+                  placeholder="Enter your custom prompt..."
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  className="w-full p-3 bg-gray-800 rounded-lg text-white resize-none h-32 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4"
+                />
                 
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setIsCustomPromptOpen(false)}
-                    className="px-4 py-2 text-gray-300 hover:text-white"
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
                   >
                     Cancel
                   </button>
+                  
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg shadow-md hover:from-purple-700 hover:to-pink-700"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    disabled={loading}
                   >
-                    Set Prompt
+                    {loading ? 'Setting...' : 'Set Prompt'}
                   </button>
                 </div>
               </form>

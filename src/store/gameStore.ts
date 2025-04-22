@@ -10,7 +10,10 @@ import {
   startNextRound, 
   setCustomPrompt, 
   getGameById,
-  subscribeToGame
+  subscribeToGame,
+  regenerateRoundPrompt,
+  startCurrentRound,
+  getUserGames
 } from '../services/game';
 
 interface GameStore extends GameState {
@@ -26,13 +29,18 @@ interface GameStore extends GameState {
   selectWinningGif: (gameId: string, submissionId: string) => Promise<void>;
   startNextGameRound: (gameId: string) => Promise<void>;
   setCustomGamePrompt: (gameId: string, promptText: string) => Promise<void>;
+  regenerateGamePrompt: (gameId: string) => Promise<void>;
+  startCurrentGameRound: (gameId: string) => Promise<void>;
   loadGame: (gameId: string) => Promise<void>;
   subscribeToGameUpdates: (gameId: string) => () => void;
   resetGameState: () => void;
+  userGames: Game[];
+  getUserGames: (userId: string) => Promise<Game[]>;
 }
 
 const useGameStore = create<GameStore>((set, get) => ({
   game: null,
+  userGames: [],
   currentUser: null,
   loading: false,
   error: null,
@@ -154,6 +162,32 @@ const useGameStore = create<GameStore>((set, get) => ({
     }
   },
   
+  regenerateGamePrompt: async (gameId) => {
+    set({ loading: true, error: null });
+    try {
+      await regenerateRoundPrompt(gameId);
+      await get().loadGame(gameId);
+    } catch (error: any) {
+      set({ error: error.message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  
+  startCurrentGameRound: async (gameId) => {
+    set({ loading: true, error: null });
+    try {
+      await startCurrentRound(gameId);
+      await get().loadGame(gameId);
+    } catch (error: any) {
+      set({ error: error.message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  
   loadGame: async (gameId) => {
     set({ loading: true, error: null });
     try {
@@ -180,6 +214,20 @@ const useGameStore = create<GameStore>((set, get) => ({
       error: null,
       loading: false
     });
+  },
+
+  getUserGames: async (userId) => {
+    set({ loading: true, error: null });
+    try {
+      const games = await getUserGames(userId);
+      set({ userGames: games });
+      return games;
+    } catch (error: any) {
+      set({ error: error.message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
   }
 }));
 

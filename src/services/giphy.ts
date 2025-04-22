@@ -7,7 +7,8 @@ const gf = new GiphyFetch(giphyApiKey);
 
 export const searchGifs = async (query: string, limit = 20, offset = 0) => {
   try {
-    const { data } = await gf.search(query, { limit, offset });
+    // Ensure we're using the offset parameter correctly for pagination
+    const { data } = await gf.search(query, { limit, offset, type: 'gifs' });
     return data;
   } catch (error) {
     console.error('Error searching gifs:', error);

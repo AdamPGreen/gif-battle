@@ -12,7 +12,9 @@ import {
   Timestamp,
   onSnapshot,
   runTransaction,
-  serverTimestamp
+  serverTimestamp,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { nanoid } from 'nanoid';
@@ -42,7 +44,7 @@ const lastRequestTimestamps = {
 // Rate limit configuration (in milliseconds)
 const RATE_LIMITS = {
   create: 5000,  // 5 seconds between game creations
-  join: 2000,    // 2 seconds between joining games
+  join: 5000,    // 5 seconds between joining games (increased from 2000)
   submit: 2000   // 2 seconds between submissions
 };
 
@@ -267,7 +269,7 @@ export const startGame = async (gameId: string) => {
       throw new Error('Need at least 2 active players to start');
     }
     
-    // Start the first round
+    // Prepare the first round
     const firstJudge = gameData.players.find(p => p.isHost);
     if (!firstJudge) throw new Error('No host found');
     
@@ -277,7 +279,8 @@ export const startGame = async (gameId: string) => {
       prompt,
       judgeId: firstJudge.id,
       submissions: [],
-      isComplete: false
+      isComplete: false,
+      hasStarted: false // Mark that the round hasn't started yet
     };
     
     await updateDoc(gameRef, {
@@ -409,7 +412,8 @@ export const startNextRound = async (gameId: string) => {
       prompt,
       judgeId: nextJudge.id,
       submissions: [],
-      isComplete: false
+      isComplete: false,
+      hasStarted: false // Mark that the round hasn't started yet
     };
     
     // Update players (set new judge)
@@ -514,6 +518,112 @@ export const addCustomPrompt = async (gameId: string, prompt: Prompt) => {
     return prompt;
   } catch (error) {
     console.error('Error adding custom prompt:', error);
+    throw error;
+  }
+};
+
+// Helper function to get a new random prompt that's different from the current one
+export const getNewRandomPrompt = (currentPromptId?: string): Prompt => {
+  let newPrompt = getRandomPrompt();
+  
+  // Make sure we don't get the same prompt twice
+  if (currentPromptId) {
+    while (newPrompt.id === currentPromptId) {
+      newPrompt = getRandomPrompt();
+    }
+  }
+  
+  return newPrompt;
+};
+
+// Regenerate a random prompt for the current round
+export const regenerateRoundPrompt = async (gameId: string) => {
+  try {
+    const gameRef = doc(db, 'games', gameId);
+    const gameDoc = await getDoc(gameRef);
+    
+    if (!gameDoc.exists()) {
+      throw new Error('Game not found');
+    }
+    
+    const gameData = gameDoc.data() as Game;
+    const currentRound = gameData.rounds[gameData.currentRound - 1];
+    
+    // Get a new prompt that's different from the current one
+    const newPrompt = getNewRandomPrompt(currentRound.prompt.id);
+    
+    // Update the round with the new prompt
+    const updatedRounds = [...gameData.rounds];
+    updatedRounds[gameData.currentRound - 1].prompt = newPrompt;
+    
+    await updateDoc(gameRef, {
+      rounds: updatedRounds,
+      updatedAt: Date.now()
+    });
+    
+    return newPrompt;
+  } catch (error) {
+    console.error('Error regenerating round prompt:', error);
+    throw error;
+  }
+};
+
+// Start the current prepared round (make it visible to players)
+export const startCurrentRound = async (gameId: string) => {
+  try {
+    const gameRef = doc(db, 'games', gameId);
+    const gameDoc = await getDoc(gameRef);
+    
+    if (!gameDoc.exists()) {
+      throw new Error('Game not found');
+    }
+    
+    const gameData = gameDoc.data() as Game;
+    const currentRound = gameData.rounds[gameData.currentRound - 1];
+    
+    // Mark the round as started
+    const updatedRounds = [...gameData.rounds];
+    updatedRounds[gameData.currentRound - 1].hasStarted = true;
+    
+    await updateDoc(gameRef, {
+      rounds: updatedRounds,
+      updatedAt: Date.now()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error starting current round:', error);
+    throw error;
+  }
+};
+
+export const getUserGames = async (userId: string) => {
+  try {
+    const gamesRef = collection(db, 'games');
+    const q = query(
+      gamesRef,
+      where('players', 'array-contains-any', [
+        { id: userId, isActive: true },
+        { id: userId, isActive: false }
+      ]),
+      orderBy('updatedAt', 'desc'),
+      limit(10)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const games: Game[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      const gameData = doc.data() as Game;
+      games.push({
+        ...gameData,
+        id: doc.id
+      });
+    });
+    
+    return games;
+  } catch (error) {
+    console.error('Error getting user games:', error);
     throw error;
   }
 };

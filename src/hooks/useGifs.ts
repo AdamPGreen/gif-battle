@@ -22,7 +22,7 @@ export const useGifs = () => {
     }
   }, []);
 
-  const searchForGifs = useCallback(async (query: string) => {
+  const searchForGifs = useCallback(async (query: string, limit = 20, offset = 0) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -31,7 +31,7 @@ export const useGifs = () => {
     setLoading(true);
     setError(null);
     try {
-      const results = await searchGifs(query);
+      const results = await searchGifs(query, limit, offset);
       setSearchResults(results);
     } catch (err: any) {
       setError(err.message || 'Error searching for GIFs');

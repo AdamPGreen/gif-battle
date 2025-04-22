@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Gift, ArrowRight } from 'lucide-react';
@@ -12,11 +12,13 @@ const InvitePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { joinExistingGame, loading: gameLoading } = useGameStore();
+  const [joinAttempted, setJoinAttempted] = useState(false);
   
   useEffect(() => {
     // If user is logged in and there's a gameId, auto-join the game
     const autoJoinGame = async () => {
-      if (user && gameId) {
+      if (user && gameId && !joinAttempted) {
+        setJoinAttempted(true);
         try {
           await joinExistingGame(
             gameId, 
@@ -33,10 +35,10 @@ const InvitePage: React.FC = () => {
       }
     };
     
-    if (user && gameId && !authLoading && !gameLoading) {
+    if (user && gameId && !authLoading && !gameLoading && !joinAttempted) {
       autoJoinGame();
     }
-  }, [user, gameId, authLoading, gameLoading, joinExistingGame, navigate]);
+  }, [user, gameId, authLoading, gameLoading, joinExistingGame, navigate, joinAttempted]);
   
   if (authLoading) {
     return (

@@ -1,6 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, CACHE_SIZE_UNLIMITED, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
+import { 
+  initializeFirestore, 
+  CACHE_SIZE_UNLIMITED, 
+  enableMultiTabIndexedDbPersistence,
+  connectFirestoreEmulator 
+} from 'firebase/firestore';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
@@ -28,6 +33,16 @@ const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true
 });
 
+// Check if we're in development environment
+const isLocalEnv = process.env.NODE_ENV === 'development';
+
+// Connect to Firebase emulators in development environment
+if (isLocalEnv) {
+  console.log('Using Firebase emulators for local development');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectAuthEmulator(auth, 'http://localhost:9099');
+}
+
 // Try to enable multi-tab persistence (but don't crash if it fails)
 if (typeof window !== 'undefined') {
   try {
@@ -51,4 +66,4 @@ const trackEvent = (eventName: string, eventParams = {}) => {
   }
 };
 
-export { auth, db, googleProvider, trackEvent, analytics };
+export { auth, db, googleProvider, trackEvent, analytics, isLocalEnv };

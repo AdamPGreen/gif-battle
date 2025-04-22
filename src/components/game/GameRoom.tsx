@@ -221,9 +221,10 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
               className="flex items-center gap-2 text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-lg text-sm"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              title="Return to homepage"
             >
               <LogOut size={16} />
-              <span className="hidden sm:inline">Leave</span>
+              <span className="hidden sm:inline">Exit Game</span>
             </motion.button>
           </div>
         </div>
