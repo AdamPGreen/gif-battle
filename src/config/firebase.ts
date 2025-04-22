@@ -3,7 +3,8 @@ import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth'
 import { 
   initializeFirestore,
   connectFirestoreEmulator,
-  FirestoreSettings
+  FirestoreSettings,
+  getFirestore
 } from 'firebase/firestore';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 
@@ -15,7 +16,8 @@ const firebaseConfig = {
   storageBucket: "gif-battle-bceab.firebasestorage.app",
   messagingSenderId: "550435143039",
   appId: "1:550435143039:web:8320bf8623ca670c282e4a",
-  databaseURL: "https://gif-battle-bceab.firebaseio.com"
+  databaseURL: "https://gif-battle-bceab.firebaseio.com",
+  databaseId: "gifbattle"
 };
 
 // Initialize Firebase
@@ -28,21 +30,17 @@ const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 // Define Firestore settings with our specific configuration
 const firestoreSettings: FirestoreSettings = {
   experimentalForceLongPolling: true, // Use long polling instead of WebSockets
-  ignoreUndefinedProperties: true,
-  localCache: {
-    lruGarbageCollection: true,
-    sizeBytes: 100000000 // Approximately 100MB cache size
-  }
+  ignoreUndefinedProperties: true
 };
 
 // Check if we're in development environment
 const isLocalEnv = process.env.NODE_ENV === 'development';
 
 // Initialize Firestore with appropriate settings
-const db = initializeFirestore(app, firestoreSettings);
+const db = getFirestore(app, 'gifbattle');
 
 // Log successful Firestore initialization
-console.log('Successfully configured Firestore to use default database');
+console.log('Successfully configured Firestore to use gifbattle database');
 
 // Connect to Firebase emulators in development environment
 if (isLocalEnv) {
