@@ -96,7 +96,7 @@ const HomePage: React.FC = () => {
                     repeatDelay: 5
                   }}
                 >
-                  <Sword size={48} className="text-yellow-400" />
+                 
                 </motion.div>
                 <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400">
                   GIF BATTLE

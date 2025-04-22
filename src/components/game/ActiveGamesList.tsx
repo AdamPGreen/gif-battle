@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, PlayCircle, Clock, Check, AlertTriangle } from 'lucide-react';
+import { Users, PlayCircle, Clock, Check, AlertTriangle, Play, Award } from 'lucide-react';
 import useGameStore from '../../store/gameStore';
 import type { Game, User } from '../../types';
 
@@ -10,66 +10,37 @@ interface ActiveGamesListProps {
 }
 
 const ActiveGamesList: React.FC<ActiveGamesListProps> = ({ user }) => {
-  const { userGames, getUserGames, loading } = useGameStore();
+  const { userGames, getUserGames, loading: isLoading } = useGameStore();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserGames = async () => {
-      try {
-        setIsLoading(true);
-        await getUserGames(user.id);
-      } catch (error) {
-        console.error('Error fetching user games:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserGames();
+    getUserGames(user.id);
   }, [getUserGames, user.id]);
+
+  const getGameStatusInfo = (game: Game) => {
+    if (game.status === 'waiting') {
+      return {
+        text: 'Waiting for players',
+        color: 'bg-purple-900 bg-opacity-30 border-purple-600',
+        icon: <Clock size={14} className="text-purple-400" />
+      };
+    } else if (game.status === 'playing') {
+      return {
+        text: 'In progress',
+        color: 'bg-blue-900 bg-opacity-30 border-blue-600',
+        icon: <Play size={14} className="text-blue-400" />
+      };
+    } else {
+      return {
+        text: 'Completed',
+        color: 'bg-gray-800 bg-opacity-30 border-gray-600',
+        icon: <Award size={14} className="text-gray-400" />
+      };
+    }
+  };
 
   const handleGameClick = (gameId: string) => {
     navigate(`/game/${gameId}`);
-  };
-
-  const getGameStatusInfo = (game: Game) => {
-    const isPlayerActive = game.players.some(p => p.id === user.id && p.isActive);
-    
-    if (!isPlayerActive) {
-      return {
-        icon: <AlertTriangle size={16} className="text-yellow-500" />,
-        text: "You left this game",
-        color: "border-yellow-600 bg-yellow-950 bg-opacity-20"
-      };
-    }
-    
-    switch (game.status) {
-      case 'waiting':
-        return {
-          icon: <Clock size={16} className="text-blue-400" />,
-          text: "Waiting for players",
-          color: "border-blue-600 bg-blue-950 bg-opacity-20"
-        };
-      case 'playing':
-        return {
-          icon: <PlayCircle size={16} className="text-green-400" />,
-          text: "In progress",
-          color: "border-green-600 bg-green-950 bg-opacity-20"
-        };
-      case 'completed':
-        return {
-          icon: <Check size={16} className="text-purple-400" />,
-          text: "Completed",
-          color: "border-purple-600 bg-purple-950 bg-opacity-20"
-        };
-      default:
-        return {
-          icon: <Clock size={16} className="text-gray-400" />,
-          text: "Unknown status",
-          color: "border-gray-600 bg-gray-800"
-        };
-    }
   };
 
   if (isLoading) {
@@ -117,9 +88,10 @@ const ActiveGamesList: React.FC<ActiveGamesListProps> = ({ user }) => {
                   <Users size={14} />
                   <span>{game.players.filter(p => p.isActive).length} / {game.maxPlayers}</span>
                 </div>
-                {!isPlayerActive && (
-                  <div className="text-xs mt-1 text-yellow-400">
-                    Rejoin to play
+                {!isPlayerActive && game.status !== 'completed' && (
+                  <div className="text-xs mt-1 text-yellow-400 flex items-center gap-1">
+                    <Play size={12} />
+                    <span>Join to play</span>
                   </div>
                 )}
               </div>

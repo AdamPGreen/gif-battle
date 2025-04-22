@@ -171,8 +171,8 @@ export const joinGame = async (gameId: string, player: Player) => {
       
       const gameData = gameDoc.data() as Game;
       
-      if (gameData.status !== 'waiting') {
-        throw new Error('Game has already started');
+      if (gameData.status === 'completed') {
+        throw new Error('Game has already ended');
       }
       
       if (gameData.players.length >= gameData.maxPlayers) {

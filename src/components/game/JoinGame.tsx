@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ArrowRight } from 'lucide-react';
+import { Users, ArrowRight, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
@@ -50,7 +50,11 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
           <Users size={48} className="text-cyan-400" />
         </div>
         
-        <h2 className="text-2xl font-bold mb-6 text-center text-white">Join Existing Game</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-white">Join Game</h2>
+        
+        <p className="text-gray-300 text-center mb-6">
+          Enter a game ID to join an existing game. You can join games that are waiting for players or already in progress.
+        </p>
         
         <form onSubmit={handleJoinGame} className="space-y-4">
           <div className="relative">
@@ -77,7 +81,7 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">
-                <ArrowRight className="h-5 w-5" />
+                <Play className="h-5 w-5" />
                 Join Game
               </span>
             )}
