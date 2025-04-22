@@ -8,7 +8,9 @@ This application uses:
 - **Firebase** for authentication, database (Firestore), and storage
 - **Vercel** for hosting and deployment
 
-### Deployment Steps
+For a complete deployment guide, please see the [detailed deployment documentation](docs/Deploy.md).
+
+### Quick Deployment Steps
 
 1. **Firebase Deployment**
    ```
