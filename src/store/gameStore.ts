@@ -165,13 +165,29 @@ const useGameStore = create<GameStore>((set, get) => ({
   regenerateGamePrompt: async (gameId) => {
     set({ loading: true, error: null });
     try {
-      await regenerateRoundPrompt(gameId);
-      await get().loadGame(gameId);
+      const newPrompt = await regenerateRoundPrompt(gameId);
+      const currentGame = get().game;
+      
+      if (currentGame) {
+        const currentRoundIndex = currentGame.currentRound - 1;
+        
+        const updatedRounds = [...currentGame.rounds];
+        updatedRounds[currentRoundIndex] = {
+          ...updatedRounds[currentRoundIndex],
+          prompt: newPrompt
+        };
+        
+        set({ 
+          game: { 
+            ...currentGame, 
+            rounds: updatedRounds 
+          },
+          loading: false
+        });
+      }
     } catch (error: any) {
-      set({ error: error.message });
+      set({ error: error.message, loading: false });
       throw error;
-    } finally {
-      set({ loading: false });
     }
   },
   

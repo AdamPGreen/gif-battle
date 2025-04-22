@@ -22,16 +22,104 @@ import type { Game, Player, Round, Prompt, GifSubmission } from '../types';
 
 // Default prompts for the game
 const DEFAULT_PROMPTS: Prompt[] = [
-  { id: 'p1', text: 'When you realize it\'s Monday morning' },
-  { id: 'p2', text: 'That feeling when you finally finish a project' },
-  { id: 'p3', text: 'Me trying to adult' },
-  { id: 'p4', text: 'When someone says "we need to talk"' },
-  { id: 'p5', text: 'How I look waiting for my code to compile' },
-  { id: 'p6', text: 'My reaction to bad news' },
-  { id: 'p7', text: 'When the WiFi goes out' },
-  { id: 'p8', text: 'Me at 3 AM looking for snacks' },
-  { id: 'p9', text: 'When someone spoils a show I\'m watching' },
-  { id: 'p10', text: 'How I dance when no one is watching' }
+  { id: 'p1', text: 'When the edible hits during a job interview...' },
+  { id: 'p2', text: 'Trying to remember if you took your birth control...' },
+  { id: 'p3', text: 'When your ex texts \'I miss you\' at 2am...' },
+  { id: 'p4', text: 'Watching your friend lie to their therapist...' },
+  { id: 'p5', text: 'When the group chat turns into a crime scene...' },
+  { id: 'p6', text: 'Realizing mid-hookup that they live with their parents...' },
+  { id: 'p7', text: 'When your boss calls you \'family\' but denies your raise...' },
+  { id: 'p8', text: 'Trying to look innocent after deleting browser history...' },
+  { id: 'p9', text: 'When the bartender cuts you off and you\'re not even close...' },
+  { id: 'p10', text: 'Your face when someone says \'crypto is the future\'...' },
+  { id: 'p11', text: 'When the condom breaks and you both pretend it\'s fine...' },
+  { id: 'p12', text: 'Reacting to your own nudes like it\'s a Yelp review...' },
+  { id: 'p13', text: 'Trying to ghost someone but they keep showing up...' },
+  { id: 'p14', text: 'When the guy with a podcast starts talking about women...' },
+  { id: 'p15', text: 'When someone starts a sentence with \'I\'m not racist, but\'...' },
+  { id: 'p16', text: 'Realizing you\'ve been in a situationship for 8 months...' },
+  { id: 'p17', text: 'Watching your friend spiral over someone they met once...' },
+  { id: 'p18', text: 'Seeing your therapist at the bar while blackout drunk...' },
+  { id: 'p19', text: 'When your hookup starts talking about crystals mid-stroke...' },
+  { id: 'p20', text: 'Trying not to laugh at a funeral because someone farted...' },
+  { id: 'p21', text: 'When you hear your neighbor\'s OnlyFans content through the wall...' },
+  { id: 'p22', text: 'Explaining your job to your boomer uncle at Thanksgiving...' },
+  { id: 'p23', text: 'When your friends roast your new situationship...' },
+  { id: 'p24', text: 'Watching your Uber driver hit on your date...' },
+  { id: 'p25', text: 'When the kink goes too far but you\'re too polite to say no...' },
+  { id: 'p26', text: 'Reacting to your own bank account after a night out...' },
+  { id: 'p27', text: 'Trying to look hot while mid-anxiety attack...' },
+  { id: 'p28', text: 'When the guy you slept with starts quoting Joe Rogan...' },
+  { id: 'p29', text: 'When you realize you\'re the toxic one...' },
+  { id: 'p30', text: 'Trying to sext while holding in a poop...' },
+  { id: 'p31', text: 'When your one-night stand wants to cuddle...' },
+  { id: 'p32', text: 'When you thought it was a date but it was a pyramid scheme...' },
+  { id: 'p33', text: 'Reacting to a 45-minute voice memo from your unstable friend...' },
+  { id: 'p34', text: 'That feeling when the walk of shame turns into a parade...' },
+  { id: 'p35', text: 'When your therapist starts crying...' },
+  { id: 'p36', text: 'Realizing too late that it\'s not an open bar...' },
+  { id: 'p37', text: 'When you open Hinge and see your boss...' },
+  { id: 'p38', text: 'Trying to look chill after saying \'I love you\' too soon...' },
+  { id: 'p39', text: 'When the Zoom camera turns on and you\'re naked...' },
+  { id: 'p40', text: 'Watching your friend go back to their toxic ex for the 7th time...' },
+  { id: 'p41', text: 'Trying to fake a kink you definitely don\'t have...' },
+  { id: 'p42', text: 'When your vibrator dies mid-session...' },
+  { id: 'p43', text: 'When your roommate walks in mid-orgasm...' },
+  { id: 'p44', text: 'Trying to flirt but sounding like a cult leader...' },
+  { id: 'p45', text: 'When your hookup says \'I\'ve never done this before\' and clearly has...' },
+  { id: 'p46', text: 'When the hot person in the group chat says something wildly stupid...' },
+  { id: 'p47', text: 'Trying to sneak out without saying goodbye after a one-night stand...' },
+  { id: 'p48', text: 'When you realize the couple you\'re with wants a third...' },
+  { id: 'p49', text: 'Reacting to a bad tattoo like it\'s a baby photo...' },
+  { id: 'p50', text: 'When the roleplay starts but you forgot the safe word...' },
+  { id: 'p51', text: 'Realizing you\'ve been talking to an AI for the last hour...' },
+  { id: 'p52', text: 'When the raccoon you were feeding starts giving you life advice...' },
+  { id: 'p53', text: 'Trying to seduce someone using only IKEA instructions...' },
+  { id: 'p54', text: 'When you realize your Uber driver is also your therapist...' },
+  { id: 'p55', text: 'Watching a goose steal your vape...' },
+  { id: 'p56', text: 'When you accidentally join a cult but the vibes are immaculate...' },
+  { id: 'p57', text: 'Mid-orgy and someone brings up climate change...' },
+  { id: 'p58', text: 'Realizing you\'ve been live-streaming to LinkedIn for 2 hours...' },
+  { id: 'p59', text: 'Getting emotionally attached to a traffic cone...' },
+  { id: 'p60', text: 'When the mushrooms kick in and the trees start flirting...' },
+  { id: 'p61', text: 'Trying to win an argument using nothing but astrology...' },
+  { id: 'p62', text: 'When your clone shows up and starts dating your ex...' },
+  { id: 'p63', text: 'Stuck in a group chat with your exes and a raccoon named Kevin...' },
+  { id: 'p64', text: 'When the AI you trained starts roasting you...' },
+  { id: 'p65', text: 'Reacting to your roommate starting a pyramid scheme for ferrets...' },
+  { id: 'p66', text: 'When you walk in on your grandma hotboxing the bathroom...' },
+  { id: 'p67', text: 'Falling in love with someone who only speaks in riddles...' },
+  { id: 'p68', text: 'Trying to do taxes while being chased by a goose...' },
+  { id: 'p69', text: 'When your reflection starts gaslighting you...' },
+  { id: 'p70', text: 'Joining a protest you don\'t understand for the free snacks...' },
+  { id: 'p71', text: 'Explaining your soul to a TSA agent...' },
+  { id: 'p72', text: 'Being the only sober person at a mime convention...' },
+  { id: 'p73', text: 'When your sleep paralysis demon asks for relationship advice...' },
+  { id: 'p74', text: 'Trying to flirt in the metaverse but keep lagging...' },
+  { id: 'p75', text: 'That moment when you realize the haunted doll is kind of hot...' },
+  { id: 'p76', text: 'When your pet starts speaking Latin and levitating...' },
+  { id: 'p77', text: 'When your kink is being ignored by customer service...' },
+  { id: 'p78', text: 'Trying to pick a safe word during an exorcism...' },
+  { id: 'p79', text: 'Realizing the \'edible\' was actually a communion wafer...' },
+  { id: 'p80', text: 'When your Hinge date brings their emotional support snake...' },
+  { id: 'p81', text: 'Falling in love with someone mid-heist...' },
+  { id: 'p82', text: 'Trying to explain to your grandma why you\'re covered in glitter and regret...' },
+  { id: 'p83', text: 'When you accidentally sext your dentist and they respond with floss tips...' },
+  { id: 'p84', text: 'That feeling when the simulation crashes and you have to reboot reality...' },
+  { id: 'p85', text: 'When your new roommate is definitely a Victorian ghost...' },
+  { id: 'p86', text: 'Trying to vibe but your shadow starts arguing with you...' },
+  { id: 'p87', text: 'When your NFT comes to life and demands alimony...' },
+  { id: 'p88', text: 'Getting arrested at a Renaissance fair for tax fraud...' },
+  { id: 'p89', text: 'When the acid kicks in and your houseplants start judging your life choices...' },
+  { id: 'p90', text: 'Trying to hold eye contact with someone who\'s chewing loudly...' },
+  { id: 'p91', text: 'When your one-night stand asks if you believe in lizard people...' },
+  { id: 'p92', text: 'Trapped in a group project with your ex, your therapist, and Nicolas Cage...' },
+  { id: 'p93', text: 'When your cat starts a podcast about your trauma...' },
+  { id: 'p94', text: 'That moment when your sleep tracker calls 911...' },
+  { id: 'p95', text: 'Trying to ghost someone but they send a singing telegram...' },
+  { id: 'p96', text: 'When your clone starts dating hotter people than you...' },
+  { id: 'p97', text: 'Getting roasted by a toddler with terrifying accuracy...' },
+  { id: 'p98', text: 'When the Ouija board just says \'ew\' over and over...' }
 ];
 
 // Last request timestamps to implement rate limiting
@@ -537,7 +625,7 @@ export const getNewRandomPrompt = (currentPromptId?: string): Prompt => {
 };
 
 // Regenerate a random prompt for the current round
-export const regenerateRoundPrompt = async (gameId: string) => {
+export const regenerateRoundPrompt = async (gameId: string): Promise<Prompt> => {
   try {
     const gameRef = doc(db, 'games', gameId);
     const gameDoc = await getDoc(gameRef);
@@ -562,7 +650,7 @@ export const regenerateRoundPrompt = async (gameId: string) => {
     });
     
     return newPrompt;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error regenerating round prompt:', error);
     throw error;
   }

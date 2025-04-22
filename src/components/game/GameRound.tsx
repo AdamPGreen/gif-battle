@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageCircle, 
@@ -16,11 +16,96 @@ import {
   Zap
 } from 'lucide-react';
 import useGameStore from '../../store/gameStore';
+import usePrompt from '../../hooks/usePrompt';
 import { useGifs } from '../../hooks/useGifs';
 import { nanoid } from 'nanoid';
 import toast from 'react-hot-toast';
 import type { Game, Player, User, GifSubmission, Round } from '../../types';
 import PlayersList from './PlayersList';
+
+// Separated prompt display component
+const PromptCard = memo(({ onCustomPromptClick }: { onCustomPromptClick: () => void }) => {
+  // Get prompt text from the dedicated hook
+  const { promptText, promptId, isLoading, regeneratePrompt } = usePrompt();
+  
+  const handleRegeneratePrompt = async (gameId: string) => {
+    try {
+      await regeneratePrompt(gameId);
+    } catch (error: any) {
+      console.error('Error regenerating prompt:', error);
+      toast.error(error.message || 'Failed to regenerate prompt');
+    }
+  };
+  
+  return (
+    <>
+      <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <Wand2 size={20} className="text-cyan-400" />
+        <span>Choose a Prompt</span>
+      </h3>
+      
+      <div className="bg-gray-900 p-4 rounded-lg mb-4">
+        <div>
+          <p className="text-gray-400 text-sm">Current prompt:</p>
+          <motion.p 
+            key={promptId} 
+            className="text-xl font-medium"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {promptText}
+          </motion.p>
+        </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <motion.button
+          onClick={() => handleRegeneratePrompt(sessionStorage.getItem('currentGameId') || '')}
+          className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg flex items-center justify-center gap-2"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          disabled={isLoading}
+        >
+          <Sparkles size={18} />
+          <span>{isLoading ? 'Generating...' : 'Generate New Prompt'}</span>
+        </motion.button>
+        
+        <motion.button
+          onClick={onCustomPromptClick}
+          className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg flex items-center justify-center gap-2"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          disabled={isLoading}
+        >
+          <MessageCircle size={18} />
+          <span>Create Custom Prompt</span>
+        </motion.button>
+      </div>
+    </>
+  );
+});
+
+// Compact version for in-round display with isolated state
+const InRoundPromptCard = memo(() => {
+  // Get prompt text from the same dedicated hook
+  const { promptText, promptId } = usePrompt();
+  
+  return (
+    <div>
+      <p className="text-gray-400 text-sm">The prompt is:</p>
+      <motion.p 
+        key={promptId}
+        className="text-xl font-medium"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        {promptText}
+      </motion.p>
+    </div>
+  );
+});
 
 interface GameRoundProps {
   game: Game;
@@ -34,10 +119,20 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     selectWinningGif, 
     startNextGameRound,
     setCustomGamePrompt,
-    regenerateGamePrompt,
     startCurrentGameRound,
     loading 
   } = useGameStore();
+  
+  // Initialize the prompt store with the current round's prompt
+  const promptStore = usePrompt(
+    game.rounds[game.currentRound - 1].prompt.text,
+    game.rounds[game.currentRound - 1].prompt.id
+  );
+  
+  // Save the current game ID for the isolated components
+  useEffect(() => {
+    sessionStorage.setItem('currentGameId', game.id);
+  }, [game.id]);
   
   const { 
     searchResults, 
@@ -192,8 +287,8 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   
   const handleRegeneratePrompt = async () => {
     try {
-      await regenerateGamePrompt(game.id);
-      toast.success('Generated a new prompt!');
+      // Just use the promptStore to update the prompt
+      await promptStore.regeneratePrompt(game.id);
     } catch (error: any) {
       console.error('Error regenerating prompt:', error);
       toast.error(error.message || 'Failed to regenerate prompt');
@@ -219,8 +314,8 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     }
     
     try {
-      await setCustomGamePrompt(game.id, customPrompt);
-      toast.success('Custom prompt set!');
+      // Use our isolated prompt state
+      await promptStore.setCustomPrompt(game.id, customPrompt);
       setCustomPrompt('');
       setIsCustomPromptOpen(false);
     } catch (error: any) {
@@ -249,41 +344,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
           
           {isJudge && !roundStarted ? (
             <div className="bg-gray-800 p-6 rounded-lg mb-6">
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Wand2 size={20} className="text-cyan-400" />
-                <span>Choose a Prompt</span>
-              </h3>
-              
-              <div className="bg-gray-900 p-4 rounded-lg mb-4">
-                <div>
-                  <p className="text-gray-400 text-sm">Current prompt:</p>
-                  <p className="text-xl font-medium">{currentRound.prompt.text}</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                <motion.button
-                  onClick={handleRegeneratePrompt}
-                  className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loading}
-                >
-                  <Sparkles size={18} />
-                  <span>Generate New Prompt</span>
-                </motion.button>
-                
-                <motion.button
-                  onClick={() => setIsCustomPromptOpen(true)}
-                  className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loading}
-                >
-                  <MessageCircle size={18} />
-                  <span>Create Custom Prompt</span>
-                </motion.button>
-              </div>
+              <PromptCard onCustomPromptClick={() => setIsCustomPromptOpen(true)} />
               
               <motion.button
                 onClick={handleStartRound}
@@ -308,10 +369,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
           ) : roundStarted ? (
             <div className="bg-gray-800 p-4 rounded-lg mb-6">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-gray-400 text-sm">The prompt is:</p>
-                  <p className="text-xl font-medium">{currentRound.prompt.text}</p>
-                </div>
+                <InRoundPromptCard />
                 
                 {isJudge && !roundComplete && (
                   <motion.button
