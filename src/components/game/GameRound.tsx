@@ -55,6 +55,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const [displayedSearchResults, setDisplayedSearchResults] = useState<any[]>([]);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   
   const gridEndRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -71,6 +72,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     if (searchTerm.trim()) {
       setSearchOffset(0);
       setDisplayedSearchResults([]);
+      setHasSearched(true);
       searchForGifs(searchTerm);
     }
   };
@@ -378,27 +380,43 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                           )}
                         </div>
                       </>
+                    ) : hasSearched ? (
+                      searchOffset === 0 ? (
+                        <div className="col-span-full text-center py-4 text-gray-400">
+                          <p>No GIFs found for "{searchTerm}"</p>
+                          <p className="text-sm mt-1">Try a different search term</p>
+                        </div>
+                      ) : (
+                        <div className="col-span-full text-center py-4 text-gray-400">
+                          <p>No more GIFs found for "{searchTerm}"</p>
+                        </div>
+                      )
                     ) : (
                       <div className="col-span-full text-center py-4 text-gray-400">
-                        <p>No GIFs found for "{searchTerm}"</p>
+                        <p>Press enter to search for "{searchTerm}"</p>
                       </div>
                     )
                   ) : (
-                    trendingGifs.slice(0, 8).map((gif) => (
-                      <motion.div
-                        key={gif.id}
-                        onClick={() => handleSelectGif(gif)}
-                        className="aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <img 
-                          src={gif.images.fixed_height_small.url} 
-                          alt="Trending GIF"
-                          className="w-full h-full object-cover"
-                        />
-                      </motion.div>
-                    ))
+                    <>
+                      <div className="col-span-full text-center py-2 text-gray-400">
+                        <p>Search for GIFs or browse trending ones below</p>
+                      </div>
+                      {trendingGifs.slice(0, 8).map((gif) => (
+                        <motion.div
+                          key={gif.id}
+                          onClick={() => handleSelectGif(gif)}
+                          className="aspect-video relative rounded-lg overflow-hidden cursor-pointer border-2 hover:border-cyan-400 border-transparent bg-gray-800"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <img 
+                            src={gif.images.fixed_height_small.url} 
+                            alt="Trending GIF"
+                            className="w-full h-full object-cover"
+                          />
+                        </motion.div>
+                      ))}
+                    </>
                   )}
                 </div>
               </div>

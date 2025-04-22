@@ -15,23 +15,45 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
   const { joinExistingGame, loading } = useGameStore();
   const navigate = useNavigate();
 
+  const extractGameId = (input: string): string | null => {
+    // Try to match a full URL first
+    const urlMatch = input.match(/\/invite\/([a-zA-Z0-9]+)/);
+    if (urlMatch) {
+      return urlMatch[1];
+    }
+    
+    // If no URL match, assume it's a direct game ID
+    // Game IDs are 8 characters long and alphanumeric
+    if (/^[a-zA-Z0-9]{8}$/.test(input)) {
+      return input;
+    }
+    
+    return null;
+  };
+
   const handleJoinGame = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!gameId.trim()) {
-      toast.error('Please enter a game ID');
+      toast.error('Please enter a game ID or invite link');
+      return;
+    }
+    
+    const extractedGameId = extractGameId(gameId.trim());
+    if (!extractedGameId) {
+      toast.error('Invalid game ID or invite link format');
       return;
     }
     
     try {
       await joinExistingGame(
-        gameId, 
+        extractedGameId, 
         user.id, 
         user.displayName || 'Anonymous'
       );
       
       toast.success('Joined game successfully!');
-      navigate(`/game/${gameId}`);
+      navigate(`/game/${extractedGameId}`);
     } catch (error: any) {
       console.error('Error joining game:', error);
       toast.error(error.message || 'Failed to join game');
@@ -53,14 +75,14 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
         <h2 className="text-2xl font-bold mb-6 text-center text-white">Join Game</h2>
         
         <p className="text-gray-300 text-center mb-6">
-          Enter a game ID to join an existing game. You can join games that are waiting for players or already in progress.
+          Enter a game ID or paste the invite link to join an existing game. You can join games that are waiting for players or already in progress.
         </p>
         
         <form onSubmit={handleJoinGame} className="space-y-4">
           <div className="relative">
             <input
               type="text"
-              placeholder="Game ID"
+              placeholder="Game ID or invite link"
               value={gameId}
               onChange={(e) => setGameId(e.target.value)}
               className="w-full py-3 px-4 text-gray-200 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
