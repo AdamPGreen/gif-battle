@@ -44,7 +44,7 @@ console.log('Successfully configured Firestore using default database');
 // Connect to Firebase emulators in development environment
 if (isLocalEnv) {
   console.log('Using Firebase emulators for local development');
-  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectFirestoreEmulator(db, 'localhost', 8090);
   connectAuthEmulator(auth, 'http://localhost:9099');
 }
 

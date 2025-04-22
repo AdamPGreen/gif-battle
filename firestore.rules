@@ -65,16 +65,22 @@ service cloud.firestore {
          let after = req.resource.data;
          let changedKeys = after.diff(before).affectedKeys();
          let userId = req.auth.uid;
+         let currentRoundIdx = before.currentRound - 1;
 
          // Check conditions for submitting a round:
          return
-           // 1. User must already be in the game's player list (using hasAny)
-           before.players.hasAny([{'id': userId}]) &&
-           // 2. Only 'rounds' and 'updatedAt' fields are allowed to change
-           (changedKeys.hasOnly(['rounds', 'updatedAt']) || changedKeys.hasOnly(['rounds'])) &&
-           // 3. The rounds array must be growing (adding data)
-           after.rounds.size() > before.rounds.size();
-           // Add more specific round validation here if needed
+           // 1. Only allow changes to 'rounds' and optionally 'updatedAt' fields
+           (changedKeys.hasOnly(['rounds']) || changedKeys.hasOnly(['rounds', 'updatedAt'])) &&
+           // 2. Make sure the current round index is valid
+           currentRoundIdx >= 0 && 
+           currentRoundIdx < before.rounds.size() &&
+           // 3. Make sure user is not the judge for the current round
+           before.rounds[currentRoundIdx].judgeId != userId &&
+           // 4. Check that the submissions array is growing in the current round
+           after.rounds.size() == before.rounds.size() &&
+           after.rounds[currentRoundIdx].submissions.size() > before.rounds[currentRoundIdx].submissions.size() &&
+           // 5. Verify the new submission belongs to the current user
+           after.rounds[currentRoundIdx].submissions[after.rounds[currentRoundIdx].submissions.size() - 1].playerId == userId;
       }
     }
   }

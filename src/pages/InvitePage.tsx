@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import useGameStore from '../store/gameStore';
 import AuthForm from '../components/auth/AuthForm';
 import toast from 'react-hot-toast';
+import { PowerGlitch } from 'powerglitch';
 
 const InvitePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -15,6 +16,33 @@ const InvitePage: React.FC = () => {
   const [joinAttempted, setJoinAttempted] = useState(false);
   
   useEffect(() => {
+    PowerGlitch.glitch('.glitch-text', {
+      playMode: 'always',
+      createContainers: true,
+      hideOverflow: false,
+      timing: {
+        duration: 2000,
+        iterations: Infinity
+      },
+      glitchTimeSpan: {
+        start: 0.5,
+        end: 0.7,
+      },
+      shake: {
+        velocity: 15,
+        amplitudeX: 0.2,
+        amplitudeY: 0.2,
+      },
+      slice: {
+        count: 6,
+        velocity: 15,
+        minHeight: 0.02,
+        maxHeight: 0.15,
+        hueRotate: true,
+      },
+      pulse: false
+    });
+    
     // If user is logged in and there's a gameId, auto-join the game
     const autoJoinGame = async () => {
       if (user && gameId && !joinAttempted) {
@@ -70,8 +98,7 @@ const InvitePage: React.FC = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 flex items-center justify-center gap-3 mb-4">
-            <Gift size={48} className="text-purple-500" />
-            <span className="glitch-text">GIF BATTLE</span>
+            <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400">GIF BATTLE</span>
           </div>
         </motion.div>
         

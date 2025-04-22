@@ -134,6 +134,31 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     sessionStorage.setItem('currentGameId', game.id);
   }, [game.id]);
   
+  // Keep a reference to the last prompt to avoid update loops
+  const lastPromptRef = useRef({
+    text: game.rounds[game.currentRound - 1].prompt.text,
+    id: game.rounds[game.currentRound - 1].prompt.id
+  });
+  
+  // Update prompt store when the current round's prompt changes
+  useEffect(() => {
+    const currentPrompt = game.rounds[game.currentRound - 1].prompt;
+    
+    // Only update if the prompt has actually changed
+    if (currentPrompt.id !== lastPromptRef.current.id || 
+        currentPrompt.text !== lastPromptRef.current.text) {
+      
+      // Update our ref
+      lastPromptRef.current = {
+        text: currentPrompt.text,
+        id: currentPrompt.id
+      };
+      
+      // Update the store
+      promptStore.setPrompt(currentPrompt.text, currentPrompt.id);
+    }
+  }, [game.rounds, game.currentRound]);
+  
   const { 
     searchResults, 
     trendingGifs, 

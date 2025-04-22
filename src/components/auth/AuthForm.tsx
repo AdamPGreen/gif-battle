@@ -75,14 +75,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
 
   return (
     <motion.div 
-      className="w-full max-w-md mx-auto p-8 rounded-xl shadow-lg bg-black bg-opacity-90 backdrop-blur-sm border border-purple-600"
+      className="w-full max-w-md mx-auto p-8 rounded-xl shadow-lg bg-black bg-opacity-90 backdrop-blur-sm"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <h2 className="text-2xl font-bold mb-6 text-center text-white">
-        {isSignUp ? 'Join the Battle' : 'Welcome to the Battle'}
-      </h2>
+      {isSignUp && (
+        <h2 className="text-2xl font-bold mb-6 text-center text-white">
+          Join the Battle
+        </h2>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {isSignUp && (

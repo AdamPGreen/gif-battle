@@ -690,7 +690,10 @@ export const startCurrentRound = async (gameId: string) => {
     
     // Mark the round as started
     const updatedRounds = [...gameData.rounds];
-    updatedRounds[gameData.currentRound - 1].hasStarted = true;
+    updatedRounds[gameData.currentRound - 1] = {
+      ...currentRound,
+      hasStarted: true
+    };
     
     await updateDoc(gameRef, {
       rounds: updatedRounds,
