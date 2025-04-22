@@ -55,7 +55,7 @@ const CreateGame: React.FC<CreateGameProps> = ({ user }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="bg-black bg-opacity-80 border border-purple-600 rounded-xl p-8 shadow-lg backdrop-blur-sm">
+      <div className="bg-black bg-opacity-80 rounded-xl p-8 shadow-lg backdrop-blur-sm">
         <div className="flex justify-center mb-6">
           <Gift size={48} className="text-pink-500" />
         </div>

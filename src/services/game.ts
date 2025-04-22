@@ -95,7 +95,7 @@ const DEFAULT_PROMPTS: Prompt[] = [
   { id: 'p71', text: 'Explaining your soul to a TSA agent...' },
   { id: 'p72', text: 'Being the only sober person at a mime convention...' },
   { id: 'p73', text: 'When your sleep paralysis demon asks for relationship advice...' },
-  { id: 'p74', text: 'Trying to flirt in the metaverse but keep lagging...' },
+  { id: 'p74', text: 'Trying to flirt in the metaverse...' },
   { id: 'p75', text: 'That moment when you realize the haunted doll is kind of hot...' },
   { id: 'p76', text: 'When your pet starts speaking Latin and levitating...' },
   { id: 'p77', text: 'When your kink is being ignored by customer service...' },
