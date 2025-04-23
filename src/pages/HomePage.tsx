@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { LogOut, Sword, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, Home, PlusCircle, Users, X } from 'lucide-react';
 import { signOut } from '../services/auth';
 import { useAuth } from '../hooks/useAuth';
 import AuthForm from '../components/auth/AuthForm';
@@ -68,6 +68,10 @@ const HomePage: React.FC = () => {
     }
   };
   
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -92,59 +96,129 @@ const HomePage: React.FC = () => {
     >
       {user ? (
         <>
-          {/* Mobile Menu rendered at the root level */}
-          <div className="md:hidden fixed top-4 right-4 z-[999]">
-            <MobileMenu 
-              onSignOut={handleSignOut}
-              userName={user.displayName || 'Player'}
-              isAuthenticated={!!user}
-              isOpen={menuOpen}
-              setIsOpen={setMenuOpen}
-            />
+          {/* Full-width mobile top bar */}
+          <div className="fixed top-0 left-0 right-0 w-full bg-gray-900 bg-opacity-90 backdrop-blur-sm z-[90] shadow-md">
+            <div className="w-full flex justify-between items-center p-4">
+              <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-3xl font-extrabold">
+                GIF BATTLE
+              </span>
+              
+              <div className="md:hidden">
+                <MobileMenu 
+                  isOpen={menuOpen}
+                  toggleMenu={toggleMenu}
+                />
+              </div>
+              
+              <motion.button
+                onClick={handleSignOut}
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <LogOut size={18} />
+                <span>Sign Out</span>
+              </motion.button>
+            </div>
           </div>
           
-          <div className="w-full max-w-6xl flex flex-col">
-            <div className="sticky top-0 pt-4 pb-2 z-[90] bg-gray-900 bg-opacity-90 backdrop-blur-sm">
-              <motion.div 
-                className="flex justify-between items-center"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="flex items-center gap-3">
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      rotate: [0, -10, 10, 0],
-                    }}
-                    transition={{
-                      duration: 0.5,
-                      repeat: Infinity,
-                      repeatDelay: 5
-                    }}
-                    className="hidden md:block"
-                  >
-                   
-                  </motion.div>
-                  <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-3xl md:text-5xl font-extrabold">
-                    GIF BATTLE
-                  </span>
-                </div>
+          {/* Mobile Menu Overlay - positioned outside any container to be full screen */}
+          <AnimatePresence>
+            {menuOpen && (
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[997]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={toggleMenu}
+                />
                 
-                <div className="flex items-center gap-4">
-                  <motion.button
-                    onClick={handleSignOut}
-                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <LogOut size={18} />
-                    <span>Sign Out</span>
-                  </motion.button>
-                </div>
-              </motion.div>
-            </div>
-            
+                {/* Menu */}
+                <motion.div
+                  className="fixed inset-0 bg-gradient-to-b from-gray-900 to-black z-[998] p-6 overflow-y-auto"
+                  initial={{ x: "100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                >
+                  <div className="flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-8">
+                      <span className="text-xl font-bold text-white">Menu</span>
+                      <motion.button
+                        onClick={toggleMenu}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <X size={24} className="text-gray-400" />
+                      </motion.button>
+                    </div>
+                    
+                    {/* User Info */}
+                    <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+                      <p className="text-gray-300 text-sm mb-1">Signed in as:</p>
+                      <p className="font-semibold text-white">{user.displayName || 'Player'}</p>
+                    </div>
+                    
+                    {/* Navigation Links */}
+                    <nav className="flex-1">
+                      <ul className="space-y-2">
+                        <li>
+                          <a 
+                            href="/"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/30 hover:bg-gray-800/70 text-white"
+                            onClick={toggleMenu}
+                          >
+                            <Home size={20} />
+                            <span>Home</span>
+                          </a>
+                        </li>
+                        <li>
+                          <a 
+                            href="/#create"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/30 hover:bg-gray-800/70 text-white"
+                            onClick={toggleMenu}
+                          >
+                            <PlusCircle size={20} />
+                            <span>Create Game</span>
+                          </a>
+                        </li>
+                        <li>
+                          <a 
+                            href="/#join"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/30 hover:bg-gray-800/70 text-white"
+                            onClick={toggleMenu}
+                          >
+                            <Users size={20} />
+                            <span>Join Game</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </nav>
+                    
+                    {/* Footer/Actions */}
+                    <div className="mt-auto pt-6 border-t border-gray-800">
+                      <motion.button
+                        onClick={() => {
+                          handleSignOut();
+                          toggleMenu();
+                        }}
+                        className="flex items-center gap-3 w-full p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700 text-white text-left"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <LogOut size={20} />
+                        <span>Sign Out</span>
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+          
+          <div className="w-full max-w-6xl flex flex-col mt-16">
             <motion.div 
               className="text-center mt-4 mb-6 md:mb-8"
               initial={{ opacity: 0 }}
