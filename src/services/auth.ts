@@ -6,8 +6,9 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { db, storage } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { User } from '../types';
 
 // Helper function to handle auth errors
@@ -88,6 +89,43 @@ export const createUserDocument = async (userId: string, userData: User) => {
       ...userData,
       createdAt: new Date().toISOString()
     });
+  } catch (error) {
+    return handleAuthError(error);
+  }
+};
+
+export const updateUserProfile = async (displayName: string, avatarFile: File | null) => {
+  try {
+    if (!auth.currentUser) {
+      throw new Error('No authenticated user found');
+    }
+    
+    let photoURL = auth.currentUser.photoURL;
+    
+    // If a new avatar file is provided, upload it to Firebase Storage
+    if (avatarFile) {
+      const storageRef = ref(storage, `avatars/${auth.currentUser.uid}`);
+      await uploadBytes(storageRef, avatarFile);
+      photoURL = await getDownloadURL(storageRef);
+    }
+    
+    // Update the auth profile
+    await updateProfile(auth.currentUser, {
+      displayName,
+      photoURL
+    });
+    
+    // Update the user document in Firestore
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    await updateDoc(userRef, {
+      displayName,
+      photoURL
+    });
+    
+    return {
+      displayName,
+      photoURL
+    };
   } catch (error) {
     return handleAuthError(error);
   }

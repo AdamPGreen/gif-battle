@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import HomePage from './pages/HomePage';
+import ProfilePage from './pages/ProfilePage';
 import GameRoom from './components/game/GameRoom';
 import InvitePage from './pages/InvitePage';
 import { useAuth } from './hooks/useAuth';
@@ -24,6 +25,13 @@ function App() {
           <div className="font-sans text-white bg-black md:bg-gray-900 min-h-screen">
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/profile" element={
+                user ? (
+                  <ErrorBoundary>
+                    <ProfilePage />
+                  </ErrorBoundary>
+                ) : <HomePage />
+              } />
               <Route path="/game/:gameId" element={
                 user ? (
                   <ErrorBoundary

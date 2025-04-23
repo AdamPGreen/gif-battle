@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Home, PlusCircle, Users, X } from 'lucide-react';
+import { LogOut, Home, PlusCircle, Users, X, UserCircle } from 'lucide-react';
 import { signOut } from '../services/auth';
 import { useAuth } from '../hooks/useAuth';
 import AuthForm from '../components/auth/AuthForm';
@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { PowerGlitch } from 'powerglitch';
 import CustomTabs from '../components/ui/CustomTabs';
 import MobileMenu from '../components/ui/MobileMenu';
+import { Link } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
   const { user, loading } = useAuth();
@@ -110,15 +111,28 @@ const HomePage: React.FC = () => {
                 />
               </div>
               
-              <motion.button
-                onClick={handleSignOut}
-                className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <LogOut size={18} />
-                <span>Sign Out</span>
-              </motion.button>
+              <div className="hidden md:flex items-center gap-3">
+                <Link to="/profile">
+                  <motion.button
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <UserCircle size={18} />
+                    <span>Profile</span>
+                  </motion.button>
+                </Link>
+                
+                <motion.button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <LogOut size={18} />
+                  <span>Sign Out</span>
+                </motion.button>
+              </div>
             </div>
           </div>
           
@@ -173,6 +187,16 @@ const HomePage: React.FC = () => {
                             <Home size={20} />
                             <span>Home</span>
                           </a>
+                        </li>
+                        <li>
+                          <Link 
+                            to="/profile"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/30 hover:bg-gray-800/70 text-white"
+                            onClick={toggleMenu}
+                          >
+                            <UserCircle size={20} />
+                            <span>Profile</span>
+                          </Link>
                         </li>
                         <li>
                           <a 

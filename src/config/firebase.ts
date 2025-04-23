@@ -6,6 +6,7 @@ import {
   FirestoreSettings,
   getFirestore
 } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
@@ -13,7 +14,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDOD1HJ_JVM7JuAeYxjQv1DB1SbhE_DogI",
   authDomain: "gif-battle-bceab.firebaseapp.com",
   projectId: "gif-battle-bceab",
-  storageBucket: "gif-battle-bceab.firebasestorage.app",
+  storageBucket: "gif-battle-bceab.appspot.com",
   messagingSenderId: "550435143039",
   appId: "1:550435143039:web:8320bf8623ca670c282e4a",
   databaseURL: "https://gif-battle-bceab.firebaseio.com"
@@ -22,6 +23,9 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// Initialize Storage
+const storage = getStorage(app);
 
 // Initialize Analytics in production only
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
@@ -46,6 +50,7 @@ if (isLocalEnv) {
   console.log('Using Firebase emulators for local development');
   connectFirestoreEmulator(db, 'localhost', 8090);
   connectAuthEmulator(auth, 'http://localhost:9099');
+  connectStorageEmulator(storage, 'localhost', 9199);
 }
 
 const googleProvider = new GoogleAuthProvider();
@@ -61,4 +66,4 @@ const trackEvent = (eventName: string, eventParams = {}) => {
 };
 
 // Make sure to include all the original exports
-export { app, auth, db, googleProvider, trackEvent, analytics, isLocalEnv };
+export { app, auth, db, storage, googleProvider, trackEvent, analytics, isLocalEnv };
