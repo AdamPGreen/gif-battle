@@ -183,14 +183,14 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
+      <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
-            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-sm xs:text-lg sm:text-xl md:text-2xl font-bold whitespace-nowrap">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-base xs:text-xl sm:text-2xl md:text-2xl font-bold whitespace-nowrap">
               GIF BATTLE
             </span>
-            <span className="text-gray-400">|</span>
-            <span className="text-sm xs:text-lg md:text-xl truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">{game.name}</span>
+            <span className="text-gray-400 text-base xs:text-xl sm:text-2xl">|</span>
+            <span className="text-base xs:text-xl sm:text-2xl md:text-2xl truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">{game.name}</span>
           </div>
           
           {/* Desktop Controls */}

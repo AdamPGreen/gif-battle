@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, Users, Play, Crown, Clock } from 'lucide-react';
+import { User, Users, Play, Crown, Clock, Copy, Share } from 'lucide-react';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
 import type { Game, Player } from '../../types';
@@ -31,6 +31,36 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({ game, isHost, currentPlayer }
     }
   };
   
+  const handleCopyGameId = () => {
+    navigator.clipboard.writeText(game.id);
+    toast.success('Game ID copied to clipboard!');
+  };
+  
+  const handleShareGame = async () => {
+    const shareUrl = `${window.location.origin}/invite/${game.id}`;
+    
+    // Check if the Web Share API is available (mostly on mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join my GIF Battle game!',
+          text: 'Click to join my GIF Battle game',
+          url: shareUrl
+        });
+        toast.success('Game shared successfully!');
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // Fallback to copy if share was cancelled or failed
+        navigator.clipboard.writeText(shareUrl);
+        toast.success('Game link copied to clipboard!');
+      }
+    } else {
+      // Fallback for desktop browsers
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Game link copied to clipboard!');
+    }
+  };
+  
   return (
     <motion.div
       className="max-w-4xl mx-auto"
@@ -52,7 +82,25 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({ game, isHost, currentPlayer }
           <div className="bg-gray-800 rounded-lg px-4 py-2 text-gray-300 flex items-center gap-2">
             <span>Game ID:</span>
             <span className="font-mono text-cyan-400">{game.id}</span>
+            <motion.button
+              onClick={handleCopyGameId}
+              className="ml-1 p-1 text-gray-300 hover:text-white rounded-full"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              title="Copy Game ID"
+            >
+              <Copy size={16} />
+            </motion.button>
           </div>
+          <motion.button
+            onClick={handleShareGame}
+            className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            title="Share Game"
+          >
+            <Share size={18} />
+          </motion.button>
         </div>
         
         <div className="mb-8 max-h-64 overflow-y-auto">
