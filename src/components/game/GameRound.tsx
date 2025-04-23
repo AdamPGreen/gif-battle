@@ -179,6 +179,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   
   const gridEndRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const currentRound = game.rounds[game.currentRound - 1];
   const isJudge = currentPlayer.isJudge;
@@ -194,6 +195,11 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       setDisplayedSearchResults([]);
       setHasSearched(true);
       searchForGifs(searchTerm);
+      
+      // Dismiss keyboard by blurring the input field
+      if (searchInputRef.current) {
+        searchInputRef.current.blur();
+      }
     }
   };
   
@@ -415,6 +421,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
             <div>
               <form onSubmit={handleSearch} className="mb-4 relative">
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="Search for GIFs..."
                   value={searchTerm}
