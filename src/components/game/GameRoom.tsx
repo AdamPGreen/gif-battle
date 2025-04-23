@@ -9,6 +9,7 @@ import WaitingRoom from './WaitingRoom';
 import GameRound from './GameRound';
 import GameResults from './GameResults';
 import RoundHistory from './RoundHistory';
+import { PowerGlitch } from 'powerglitch';
 
 interface GameRoomProps {
   user: User;
@@ -199,14 +200,15 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3">
-        <div className="flex justify-between items-center">
+      <div className="container mx-auto px-4 sm:px-6 h-[65px] flex items-center">
+        <div className="flex justify-between items-center w-full">
           <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-base xs:text-xl sm:text-2xl md:text-2xl font-bold whitespace-nowrap">
-              GIF BATTLE
+            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-xl md:text-2xl font-bold whitespace-nowrap">
+              <span className="md:hidden">GB</span>
+              <span className="hidden md:inline">GIF BATTLE</span>
             </span>
-            <span className="text-gray-400 text-base xs:text-xl sm:text-2xl">|</span>
-            <span className="text-base xs:text-xl sm:text-2xl md:text-2xl truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">{game.name}</span>
+            <span className="text-gray-400 text-xl md:text-2xl">|</span>
+            <span className="text-xl md:text-2xl truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">{game.name}</span>
           </div>
           
           {/* Desktop Controls */}
@@ -259,19 +261,33 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
           </div>
           
           {/* Mobile Controls */}
-          <motion.button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 sm:p-2 rounded-lg bg-gray-800 text-white"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
-          </motion.button>
+          <div className="md:hidden flex items-center gap-4">
+            {hasCompletedRounds && (
+              <motion.button
+                onClick={onOpenHistory}
+                className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 text-white"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label="View round history"
+              >
+                <Clock size={20} />
+              </motion.button>
+            )}
+            
+            <motion.button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 text-white"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </motion.button>
+          </div>
           
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <motion.div 
-              className="absolute top-full left-0 right-0 bg-black bg-opacity-95 border-b border-purple-600 p-4 md:hidden z-[100]"
+              className="absolute top-[65px] left-0 right-0 bg-black bg-opacity-95 border-b border-purple-600 p-4 md:hidden z-[100]"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -281,21 +297,6 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
                   <Users size={18} />
                   <span>Players: {activePlayers.length} / {game.maxPlayers}</span>
                 </div>
-                
-                {hasCompletedRounds && (
-                  <motion.button
-                    onClick={() => {
-                      onOpenHistory();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="flex items-center justify-center gap-2 w-full py-3 text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg text-sm"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Clock size={18} />
-                    <span>View Round History</span>
-                  </motion.button>
-                )}
                 
                 <motion.button
                   onClick={() => {
