@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Copy, ExternalLink, LogOut, Award, Users } from 'lucide-react';
+import { Copy, ExternalLink, LogOut, Award, Users, Menu, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
@@ -174,25 +174,27 @@ interface GameHeaderProps {
 
 const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame, copied }) => {
   const activePlayers = game.players.filter(p => p.isActive);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   return (
     <motion.div 
-      className="bg-black bg-opacity-80 border-b border-purple-600 backdrop-blur-sm"
+      className="bg-black bg-opacity-80 border-b border-purple-600 backdrop-blur-sm sticky top-0 z-[90]"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-2xl font-bold">
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">
+            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-sm xs:text-lg sm:text-xl md:text-2xl font-bold whitespace-nowrap">
               GIF BATTLE
             </span>
             <span className="text-gray-400">|</span>
-            <span className="text-xl">{game.name}</span>
+            <span className="text-sm xs:text-lg md:text-xl truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">{game.name}</span>
           </div>
           
-          <div className="flex items-center gap-4">
+          {/* Desktop Controls */}
+          <div className="hidden md:flex items-center gap-4">
             <div className="flex items-center gap-2 text-cyan-400 px-3 py-1 rounded-full bg-gray-800">
               <Users size={18} />
               <span>{activePlayers.length} / {game.maxPlayers}</span>
@@ -211,7 +213,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
               ) : (
                 <>
                   <Copy size={16} />
-                  <span className="hidden sm:inline">Copy Invite</span>
+                  <span>Copy Invite</span>
                 </>
               )}
             </motion.button>
@@ -224,9 +226,62 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
               title="Return to homepage"
             >
               <LogOut size={16} />
-              <span className="hidden sm:inline">Exit Game</span>
+              <span>Exit Game</span>
             </motion.button>
           </div>
+          
+          {/* Mobile Controls */}
+          <motion.button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-1.5 sm:p-2 rounded-lg bg-gray-800 text-white"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </motion.button>
+          
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <motion.div 
+              className="absolute top-full left-0 right-0 bg-black bg-opacity-95 border-b border-purple-600 p-4 md:hidden z-[100]"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-cyan-400 px-3 py-2 rounded-lg bg-gray-800/50 mb-2">
+                  <Users size={18} />
+                  <span>Players: {activePlayers.length} / {game.maxPlayers}</span>
+                </div>
+                
+                <motion.button
+                  onClick={() => {
+                    onCopyInvite();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-center gap-2 w-full py-3 text-white bg-purple-600 hover:bg-purple-700 rounded-lg text-sm"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Copy size={18} />
+                  <span>Copy Invite Link</span>
+                </motion.button>
+                
+                <motion.button
+                  onClick={() => {
+                    onLeaveGame();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-center gap-2 w-full py-3 text-white bg-red-600 hover:bg-red-700 rounded-lg text-sm"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <LogOut size={18} />
+                  <span>Exit Game</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </motion.div>

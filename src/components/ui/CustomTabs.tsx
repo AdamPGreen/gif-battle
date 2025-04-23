@@ -17,11 +17,11 @@ const CustomTabs: React.FC<CustomTabsProps> = ({ tabs, initialTabIndex = 0 }) =>
   return (
     <div className="mb-6">
       <div className="flex justify-center mb-8">
-        <div className="inline-flex p-1 bg-black/30 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden">
+        <div className="inline-flex p-1 w-full sm:w-auto bg-black/30 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden">
           {tabs.map((tab, index) => (
             <motion.button
               key={tab.label}
-              className={`relative px-10 py-3 font-medium text-center transition-all duration-300
+              className={`relative flex-1 px-4 sm:px-10 py-3 font-medium text-center transition-all duration-300
                 ${activeTabIndex === index 
                   ? 'text-white' 
                   : 'text-gray-400 hover:text-white'

@@ -10,6 +10,7 @@ import ActiveGamesList from '../components/game/ActiveGamesList';
 import toast from 'react-hot-toast';
 import { PowerGlitch } from 'powerglitch';
 import CustomTabs from '../components/ui/CustomTabs';
+import MobileMenu from '../components/ui/MobileMenu';
 
 const HomePage: React.FC = () => {
   const { user, loading } = useAuth();
@@ -77,14 +78,14 @@ const HomePage: React.FC = () => {
     >
       {user ? (
         <div className="w-full max-w-6xl flex flex-col">
-          <div className="sticky top-0 pt-4 pb-8 z-10 bg-transparent">
+          <div className="sticky top-0 pt-4 pb-4 md:pb-8 z-[90] bg-transparent">
             <motion.div 
-              className="flex justify-between items-center mb-12"
+              className="flex justify-between items-center mb-4 md:mb-12"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="text-5xl font-extrabold flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <motion.div
                   animate={{
                     scale: [1, 1.2, 1],
@@ -95,35 +96,44 @@ const HomePage: React.FC = () => {
                     repeat: Infinity,
                     repeatDelay: 5
                   }}
+                  className="hidden md:block"
                 >
                  
                 </motion.div>
-                <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400">
+                <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-3xl md:text-5xl font-extrabold">
                   GIF BATTLE
                 </span>
               </div>
               
-              <motion.button
-                onClick={handleSignOut}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <LogOut size={18} />
-                <span>Sign Out</span>
-              </motion.button>
+              <div className="flex items-center gap-4">
+                <motion.button
+                  onClick={handleSignOut}
+                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <LogOut size={18} />
+                  <span>Sign Out</span>
+                </motion.button>
+                
+                <MobileMenu 
+                  onSignOut={handleSignOut}
+                  userName={user.displayName || 'Player'}
+                  isAuthenticated={!!user}
+                />
+              </div>
             </motion.div>
             
             <motion.div 
-              className="text-center mb-8"
+              className="text-center mb-6 md:mb-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <h1 className="text-3xl font-bold text-white mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
                 Welcome, {user.displayName || 'Player'}!
               </h1>
-              <p className="text-gray-300 max-w-2xl mx-auto">
+              <p className="text-gray-300 text-sm md:text-base max-w-2xl mx-auto">
                 Challenge your friends to find the perfect GIF that matches the prompt. Create a new game or join an existing one to get started!
               </p>
             </motion.div>
@@ -135,7 +145,7 @@ const HomePage: React.FC = () => {
                 {
                   label: 'Create a Game',
                   content: (
-                    <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm">
+                    <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
                       <CreateGame user={user} />
                     </div>
                   )
@@ -143,7 +153,7 @@ const HomePage: React.FC = () => {
                 {
                   label: 'Join a Game',
                   content: (
-                    <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm">
+                    <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
                       <div className="mb-8">
                         <h2 className="text-2xl font-bold text-white mb-4">My Games</h2>
                         <ActiveGamesList user={user} />
