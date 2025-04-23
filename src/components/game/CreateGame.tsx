@@ -56,11 +56,11 @@ const CreateGame: React.FC<CreateGameProps> = ({ user }) => {
       transition={{ duration: 0.5 }}
     >
       <div className="rounded-xl pb-4">
-        <div className="flex justify-center mb-0">
+        <div className="flex justify-center mb-4">
           <img 
             src="/images/bomb-icon.png" 
             alt="Bomb Icon" 
-            className="w-32 h-32"
+            className="w-24 h-24"
           />
         </div>
         

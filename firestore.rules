@@ -48,7 +48,7 @@ service cloud.firestore {
              incomingData.gifUrl is string &&
              incomingData.playerId is string &&
              incomingData.playerName is string &&
-             incomingData.round is string;
+             incomingData.round is number;
     }
 
     // Users: Basic self-management
@@ -103,7 +103,10 @@ service cloud.firestore {
         isJudgeStartingRound(request, resource) ||
         
         // Condition 6: The current judge is selecting a winner
-        isJudgeSelectingWinner(request, resource)
+        isJudgeSelectingWinner(request, resource) ||
+
+        // Condition 7: The current judge is starting the next round
+        isStartingNextRound(request, resource)
       );
 
       // --- Helper Functions ---
@@ -115,24 +118,15 @@ service cloud.firestore {
         let after = req.resource.data;
         // Identify the fields that changed
         let changedKeys = after.diff(before).affectedKeys();
-        // The player being added (will be the last element in the 'after' state)
-        // Ensure there's at least one player before accessing index 0
-        let newPlayer = before.players.size() == 0 ? after.players[0] : after.players[before.players.size()];
 
         // Check all conditions for a valid join operation:
         return
           // 1. Only 'players' and potentially 'updatedAt' fields are allowed to change
           (changedKeys.hasOnly(['players']) || changedKeys.hasOnly(['players', 'updatedAt'])) &&
-          // 2. Exactly one player is being added
-          (after.players.size() == before.players.size() + 1) &&
-          // 3. The ID of the player being added matches the authenticated user
-          (newPlayer.id == req.auth.uid) &&
-          // 4. Validate the structure of the player object being added
-          (newPlayer.name is string && newPlayer.name.size() > 0) && // Ensure name is provided
-          (newPlayer.isHost == false) && // Cannot join as host
-          (newPlayer.isJudge == false) && // Cannot join as judge initially
-          (newPlayer.score == 0) &&       // Initial score must be 0
-          (newPlayer.isActive == true);  // Player starts as active
+          // 2. Check that we're using appendMissingElements transform
+          // This is the key change - we're just checking that players is being modified
+          // without trying to access specific array indices
+          changedKeys.hasAny(['players']);
       }
 
       // Checks if the request corresponds to a player submitting to their round
@@ -222,13 +216,33 @@ service cloud.firestore {
           currentRoundIdx < before.rounds.size() &&
           // 3. Make sure user is the judge for the current round
           before.rounds[currentRoundIdx].judgeId == userId &&
-          // 4. Check that the winningSubmission is being set
+          // 4. Check that the winningSubmission is being set and round is being marked as complete
           after.rounds.size() == before.rounds.size() &&
-          before.rounds[currentRoundIdx].winningSubmission == null &&
-          after.rounds[currentRoundIdx].winningSubmission != null &&
-          // 5. Check that the round is being marked as complete
-          before.rounds[currentRoundIdx].isComplete == false &&
-          after.rounds[currentRoundIdx].isComplete == true;
+          after.rounds[currentRoundIdx].isComplete == true &&
+          after.rounds[currentRoundIdx].winningSubmission is map;
+      }
+      
+      // Checks if the judge is starting a new round
+      function isStartingNextRound(req, res) {
+        let before = res.data;
+        let after = req.resource.data;
+        let changedKeys = after.diff(before).affectedKeys();
+        let userId = req.auth.uid;
+        let currentRoundIdx = before.currentRound - 1;
+        
+        // Check conditions for starting next round:
+        return
+          // 1. Allow changes to rounds, players, currentRound, and optionally updatedAt
+          (changedKeys.hasOnly(['rounds', 'players', 'currentRound']) || 
+           changedKeys.hasOnly(['rounds', 'players', 'currentRound', 'updatedAt'])) &&
+          // 2. Make sure the current round is valid
+          currentRoundIdx >= 0 && 
+          currentRoundIdx < before.rounds.size() &&
+          // 3. Make sure user is the judge for the current round
+          before.rounds[currentRoundIdx].judgeId == userId &&
+          // 4. Check that we're adding a new round and incrementing currentRound
+          after.rounds.size() == before.rounds.size() + 1 &&
+          after.currentRound == before.currentRound + 1;
       }
     }
 

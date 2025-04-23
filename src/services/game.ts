@@ -303,13 +303,13 @@ export const joinGame = async (gameId: string, player: Player) => {
       
       // Add new player
       transaction.update(gameRef, {
-        players: arrayUnion({
+        players: [...gameData.players, {
           ...player,
           isHost: false,
           isJudge: false,
           score: 0,
           isActive: true
-        }),
+        }],
         updatedAt: serverTimestamp()
       });
       
