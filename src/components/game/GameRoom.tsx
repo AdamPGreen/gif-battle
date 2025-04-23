@@ -63,10 +63,13 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
         // 1. The player is not the host (who started the game)
         // 2. The player hasn't submitted in the current round
         // 3. There are already submissions from other players (indicating the game is in progress)
+        // 4. The player hasn't participated in any previous rounds (to avoid showing on every round)
         if (currentRound && 
             !currentPlayer.isHost && 
             !currentRound.submissions.some(s => s.playerId === user.id) &&
-            currentRound.submissions.length > 0) {
+            currentRound.submissions.length > 0 &&
+            // Check if user hasn't participated in ANY previous rounds
+            game.rounds.every(round => !round.submissions.some(s => s.playerId === user.id))) {
           setShowWelcomeMessage(true);
           // Hide the message after 5 seconds
           const timer = setTimeout(() => {
