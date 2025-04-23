@@ -143,7 +143,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
         copied={copied}
       />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-2 md:py-8">
         {game.status === 'waiting' && (
           <WaitingRoom game={game} isHost={isHost} currentPlayer={currentPlayer} />
         )}

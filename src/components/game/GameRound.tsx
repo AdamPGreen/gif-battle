@@ -359,7 +359,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     <div className="grid md:grid-cols-4 gap-6">
       <div className="md:col-span-3">
         <motion.div 
-          className="bg-black bg-opacity-90 backdrop-blur-sm border border-purple-600 rounded-xl p-3 sm:p-6 shadow-lg mb-6"
+          className="bg-black bg-opacity-90 backdrop-blur-sm border-0 md:border md:border-purple-600 rounded-none md:rounded-xl p-3 sm:p-6 shadow-lg mb-2 md:mb-6 mx-[-1rem] md:mx-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
