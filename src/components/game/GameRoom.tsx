@@ -9,6 +9,7 @@ import WaitingRoom from './WaitingRoom';
 import GameRound from './GameRound';
 import GameResults from './GameResults';
 import RoundHistory from './RoundHistory';
+import RoundResultsModal from './RoundResultsModal';
 import { PowerGlitch } from 'powerglitch';
 
 interface GameRoomProps {
@@ -30,6 +31,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   
   const [copied, setCopied] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [showRoundResultsModal, setShowRoundResultsModal] = useState(false);
+  const [lastCompletedRoundId, setLastCompletedRoundId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!gameId) return;
@@ -52,6 +55,19 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
       unsubscribe();
     };
   }, [gameId, user, loadGame, subscribeToGameUpdates, setCurrentUser, navigate]);
+
+  // Track when rounds complete and show the results modal
+  useEffect(() => {
+    if (!game) return;
+    
+    const currentRound = game.rounds[game.currentRound - 1];
+    
+    // If the current round has completed and it's not the same round we've already shown results for
+    if (currentRound?.isComplete && currentRound.id !== lastCompletedRoundId) {
+      setShowRoundResultsModal(true);
+      setLastCompletedRoundId(currentRound.id);
+    }
+  }, [game, lastCompletedRoundId]);
 
   const handleCopyInvite = () => {
     const inviteLink = `${window.location.origin}/invite/${gameId}`;
@@ -174,6 +190,16 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
           />
         )}
       </AnimatePresence>
+
+      {/* Add the RoundResultsModal for completed rounds */}
+      {game?.rounds.length > 0 && lastCompletedRoundId && (
+        <RoundResultsModal
+          isOpen={showRoundResultsModal}
+          onClose={() => setShowRoundResultsModal(false)}
+          round={game.rounds.find(r => r.id === lastCompletedRoundId)!}
+          currentPlayer={currentPlayer!}
+        />
+      )}
     </div>
   );
 };

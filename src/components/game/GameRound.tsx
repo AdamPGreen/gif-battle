@@ -297,7 +297,6 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const handleSelectWinner = async (submission: GifSubmission) => {
     try {
       await selectWinningGif(game.id, submission.id);
-      toast.success(`${submission.playerName}'s GIF wins this round!`);
     } catch (error: any) {
       console.error('Error selecting winner:', error);
       toast.error(error.message || 'Failed to select winner');
@@ -307,7 +306,6 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const handleNextRound = async () => {
     try {
       await startNextGameRound(game.id);
-      toast.success('Starting next round!');
       setSearchTerm('');
       setSelectedGif(null);
     } catch (error: any) {
@@ -607,25 +605,6 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="mb-6">
-                  <h3 className="text-2xl font-semibold mb-2 flex items-center justify-center gap-2">
-                    <Trophy size={24} className="text-yellow-500" />
-                    <span>Round Winner</span>
-                  </h3>
-                  
-                  <p className="text-cyan-400 mb-4">
-                    <span className="font-medium">{currentRound.winningSubmission?.playerName}</span> won this round!
-                  </p>
-                  
-                  <div className="max-w-md mx-auto bg-gray-800 rounded-lg overflow-hidden">
-                    <img 
-                      src={currentRound.winningSubmission?.gifUrl} 
-                      alt="Winning submission"
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
-                </div>
-                
                 {isJudge && game.currentRound < game.maxRounds && (
                   <motion.button
                     onClick={handleNextRound}
