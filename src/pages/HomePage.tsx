@@ -187,7 +187,7 @@ const HomePage: React.FC = () => {
             </p>
           </motion.div>
           
-          <AuthForm onSuccess={() => toast.success('Welcome to GIF Battle!')} />
+          <AuthForm onSuccess={() => {}} />
         </div>
       )}
     </div>

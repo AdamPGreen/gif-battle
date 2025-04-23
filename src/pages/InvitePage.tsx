@@ -54,7 +54,6 @@ const InvitePage: React.FC = () => {
             user.displayName as string
           );
           
-          toast.success('Joined game successfully!');
           navigate(`/game/${gameId}`);
         } catch (error: any) {
           console.error('Error joining game:', error);

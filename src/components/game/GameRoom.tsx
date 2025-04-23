@@ -27,7 +27,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   } = useGameStore();
   
   const [copied, setCopied] = useState(false);
-  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
 
   useEffect(() => {
     if (!gameId) return;
@@ -50,36 +49,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
       unsubscribe();
     };
   }, [gameId, user, loadGame, subscribeToGameUpdates, setCurrentUser, navigate]);
-
-  // Show welcome message for players joining in-progress games
-  useEffect(() => {
-    if (game && game.status === 'playing') {
-      const currentPlayer = game.players.find(p => p.id === user.id);
-      if (currentPlayer && currentPlayer.isActive) {
-        // Check if the player just joined (by looking at the current round's submissions)
-        const currentRound = game.rounds[game.currentRound - 1];
-        
-        // Only show welcome message if:
-        // 1. The player is not the host (who started the game)
-        // 2. The player hasn't submitted in the current round
-        // 3. There are already submissions from other players (indicating the game is in progress)
-        // 4. The player hasn't participated in any previous rounds (to avoid showing on every round)
-        if (currentRound && 
-            !currentPlayer.isHost && 
-            !currentRound.submissions.some(s => s.playerId === user.id) &&
-            currentRound.submissions.length > 0 &&
-            // Check if user hasn't participated in ANY previous rounds
-            game.rounds.every(round => !round.submissions.some(s => s.playerId === user.id))) {
-          setShowWelcomeMessage(true);
-          // Hide the message after 5 seconds
-          const timer = setTimeout(() => {
-            setShowWelcomeMessage(false);
-          }, 5000);
-          return () => clearTimeout(timer);
-        }
-      }
-    }
-  }, [game, user.id]);
 
   const handleCopyInvite = () => {
     const inviteLink = `${window.location.origin}/invite/${gameId}`;
@@ -174,22 +143,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
         onLeaveGame={handleLeaveGame}
         copied={copied}
       />
-      
-      {showWelcomeMessage && (
-        <motion.div 
-          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-black bg-opacity-90 border border-purple-600 rounded-xl p-6 shadow-lg backdrop-blur-sm max-w-md"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-        >
-          <h3 className="text-xl font-bold text-center mb-2 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent">
-            Welcome to the Game!
-          </h3>
-          <p className="text-gray-300 text-center">
-            You've joined an in-progress game. You'll be able to participate in the next round.
-          </p>
-        </motion.div>
-      )}
       
       <div className="container mx-auto px-4 py-8">
         {game.status === 'waiting' && (
