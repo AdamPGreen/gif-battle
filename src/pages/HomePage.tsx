@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { LogOut, Sword, Zap } from 'lucide-react';
 import { signOut } from '../services/auth';
@@ -14,6 +14,20 @@ import MobileMenu from '../components/ui/MobileMenu';
 
 const HomePage: React.FC = () => {
   const { user, loading } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Handle body scroll locking when mobile menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
   
   useEffect(() => {
     PowerGlitch.glitch('.glitch-text', {
@@ -77,55 +91,62 @@ const HomePage: React.FC = () => {
       }}
     >
       {user ? (
-        <div className="w-full max-w-6xl flex flex-col">
-          <div className="sticky top-0 pt-4 pb-4 md:pb-8 z-[90] bg-transparent">
-            <motion.div 
-              className="flex justify-between items-center mb-4 md:mb-12"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="flex items-center gap-3">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, -10, 10, 0],
-                  }}
-                  transition={{
-                    duration: 0.5,
-                    repeat: Infinity,
-                    repeatDelay: 5
-                  }}
-                  className="hidden md:block"
-                >
-                 
-                </motion.div>
-                <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-3xl md:text-5xl font-extrabold">
-                  GIF BATTLE
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <motion.button
-                  onClick={handleSignOut}
-                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <LogOut size={18} />
-                  <span>Sign Out</span>
-                </motion.button>
+        <>
+          {/* Mobile Menu rendered at the root level */}
+          <div className="md:hidden fixed top-4 right-4 z-[999]">
+            <MobileMenu 
+              onSignOut={handleSignOut}
+              userName={user.displayName || 'Player'}
+              isAuthenticated={!!user}
+              isOpen={menuOpen}
+              setIsOpen={setMenuOpen}
+            />
+          </div>
+          
+          <div className="w-full max-w-6xl flex flex-col">
+            <div className="sticky top-0 pt-4 pb-2 z-[90] bg-gray-900 bg-opacity-90 backdrop-blur-sm">
+              <motion.div 
+                className="flex justify-between items-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      rotate: [0, -10, 10, 0],
+                    }}
+                    transition={{
+                      duration: 0.5,
+                      repeat: Infinity,
+                      repeatDelay: 5
+                    }}
+                    className="hidden md:block"
+                  >
+                   
+                  </motion.div>
+                  <span className="glitch-text bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-3xl md:text-5xl font-extrabold">
+                    GIF BATTLE
+                  </span>
+                </div>
                 
-                <MobileMenu 
-                  onSignOut={handleSignOut}
-                  userName={user.displayName || 'Player'}
-                  isAuthenticated={!!user}
-                />
-              </div>
-            </motion.div>
+                <div className="flex items-center gap-4">
+                  <motion.button
+                    onClick={handleSignOut}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <LogOut size={18} />
+                    <span>Sign Out</span>
+                  </motion.button>
+                </div>
+              </motion.div>
+            </div>
             
             <motion.div 
-              className="text-center mb-6 md:mb-8"
+              className="text-center mt-4 mb-6 md:mb-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -137,35 +158,35 @@ const HomePage: React.FC = () => {
                 Challenge your friends to find the perfect GIF that matches the prompt. Create a new game or join an existing one to get started!
               </p>
             </motion.div>
-          </div>
-          
-          <div className="min-h-[500px]">
-            <CustomTabs 
-              tabs={[
-                {
-                  label: 'Create a Game',
-                  content: (
-                    <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
-                      <CreateGame user={user} />
-                    </div>
-                  )
-                },
-                {
-                  label: 'Join a Game',
-                  content: (
-                    <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
-                      <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-white mb-4">My Games</h2>
-                        <ActiveGamesList user={user} />
+            
+            <div className="min-h-[500px]">
+              <CustomTabs 
+                tabs={[
+                  {
+                    label: 'Create a Game',
+                    content: (
+                      <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
+                        <CreateGame user={user} />
                       </div>
-                      <JoinGame user={user} />
-                    </div>
-                  )
-                }
-              ]}
-            />
+                    )
+                  },
+                  {
+                    label: 'Join a Game',
+                    content: (
+                      <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
+                        <div className="mb-8">
+                          <h2 className="text-2xl font-bold text-white mb-4">My Games</h2>
+                          <ActiveGamesList user={user} />
+                        </div>
+                        <JoinGame user={user} />
+                      </div>
+                    )
+                  }
+                ]}
+              />
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="w-full max-w-6xl">
           <motion.div 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, Home, PlusCircle, Users } from 'lucide-react';
 
@@ -6,25 +6,27 @@ interface MobileMenuProps {
   onSignOut: () => void;
   userName: string;
   isAuthenticated: boolean;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
 const MobileMenu: React.FC<MobileMenuProps> = ({ 
   onSignOut, 
   userName,
-  isAuthenticated
+  isAuthenticated,
+  isOpen,
+  setIsOpen
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
   
   return (
-    <div className="md:hidden">
+    <>
       {/* Hamburger Button */}
       <motion.button
         onClick={toggleMenu}
-        className="p-2 rounded-lg bg-gray-800/70 text-white z-[101] relative"
+        className="p-2 rounded-lg bg-gray-800/70 text-white relative"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Toggle menu"
@@ -32,13 +34,13 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </motion.button>
       
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu Overlay - positioned fixed to the viewport */}
       <AnimatePresence>
         {isOpen && (
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99]"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[997]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -47,7 +49,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             
             {/* Menu */}
             <motion.div
-              className="fixed right-0 top-0 bottom-0 w-4/5 max-w-xs bg-gradient-to-b from-gray-900 to-black border-l border-purple-900/50 z-[100] p-6 overflow-y-auto"
+              className="fixed right-0 top-0 bottom-0 w-4/5 max-w-xs bg-gradient-to-b from-gray-900 to-black border-l border-purple-900/50 z-[998] p-6 overflow-y-auto"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -136,7 +138,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 
