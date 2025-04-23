@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, PlayCircle, Clock, Check, AlertTriangle, Play, Award } from 'lucide-react';
 import useGameStore from '../../store/gameStore';
+import toast from 'react-hot-toast';
 import type { Game, User } from '../../types';
 
 interface ActiveGamesListProps {
@@ -10,12 +11,14 @@ interface ActiveGamesListProps {
 }
 
 const ActiveGamesList: React.FC<ActiveGamesListProps> = ({ user }) => {
-  const { userGames, getUserGames, loading: isLoading } = useGameStore();
+  const { userGames, getUserGames, loading: isLoading, joinExistingGame } = useGameStore();
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUserGames(user.id);
-  }, [getUserGames, user.id]);
+    if (user && user.id) {
+      getUserGames(user.id);
+    }
+  }, [getUserGames, user]);
 
   const getGameStatusInfo = (game: Game) => {
     if (game.status === 'waiting') {
@@ -39,7 +42,26 @@ const ActiveGamesList: React.FC<ActiveGamesListProps> = ({ user }) => {
     }
   };
 
-  const handleGameClick = (gameId: string) => {
+  const handleGameClick = async (gameId: string) => {
+    const game = userGames.find(g => g.id === gameId);
+    if (!game) return;
+    
+    const isPlayerActive = game.players.some(p => p.id === user.id && p.isActive);
+    
+    if (!isPlayerActive && game.status !== 'completed') {
+      // Player needs to rejoin
+      try {
+        toast.loading('Rejoining game...', { id: 'rejoinGame' });
+        const playerName = user.displayName || `Player_${user.id.slice(0, 5)}`;
+        await joinExistingGame(gameId, user.id, playerName);
+        toast.success('Successfully rejoined game!', { id: 'rejoinGame' });
+      } catch (error: any) {
+        console.error('Error rejoining game:', error);
+        toast.error(error.message || 'Failed to rejoin game', { id: 'rejoinGame' });
+        return; // Don't navigate if rejoining failed
+      }
+    }
+    
     navigate(`/game/${gameId}`);
   };
 
@@ -54,8 +76,12 @@ const ActiveGamesList: React.FC<ActiveGamesListProps> = ({ user }) => {
 
   if (userGames.length === 0) {
     return (
-      <div className="p-6 bg-gray-800 bg-opacity-50 rounded-xl text-center text-gray-400">
-        No active games found. Join a game below!
+      <div className="p-6 bg-gray-800 bg-opacity-50 rounded-xl text-center">
+        <div className="text-gray-400 flex flex-col items-center">
+          <Users size={24} className="text-gray-500 mb-2" />
+          <p>You don't have any recent games.</p>
+          <p className="text-sm mt-1">Join a game using the form above!</p>
+        </div>
       </div>
     );
   }
@@ -91,7 +117,13 @@ const ActiveGamesList: React.FC<ActiveGamesListProps> = ({ user }) => {
                 {!isPlayerActive && game.status !== 'completed' && (
                   <div className="text-xs mt-1 text-yellow-400 flex items-center gap-1">
                     <Play size={12} />
-                    <span>Join to play</span>
+                    <span>Rejoin</span>
+                  </div>
+                )}
+                {isPlayerActive && (
+                  <div className="text-xs mt-1 text-green-400 flex items-center gap-1">
+                    <Check size={12} />
+                    <span>Active</span>
                   </div>
                 )}
               </div>
