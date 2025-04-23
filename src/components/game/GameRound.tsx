@@ -401,18 +401,6 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
             <div className="bg-gray-800 p-4 rounded-lg mb-6">
               <div className="flex justify-between items-start">
                 <InRoundPromptCard />
-                
-                {isJudge && !roundComplete && (
-                  <motion.button
-                    onClick={() => setIsCustomPromptOpen(true)}
-                    className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <RefreshCw size={14} />
-                    Change Prompt
-                  </motion.button>
-                )}
               </div>
             </div>
           ) : null}
