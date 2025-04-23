@@ -1,264 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
+    
+    // Allow any signed-in user to read any game
+    match /games/{gameId} {
+      allow read: if request.auth != null;
+      
+      // Create games
+      allow create: if request.auth != null && 
+                       request.resource.data.hostId == request.auth.uid;
+      
+      // Update games - all signed-in users for now
+      allow update: if request.auth != null;
+      
+      // Delete a game
+      allow delete: if request.auth != null && 
+                       resource.data.hostId == request.auth.uid;
     }
     
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-    
-    function isGameParticipant(gameData) {
-      return isSignedIn() && 
-        (gameData.players[request.auth.uid] != null || 
-         gameData.players[request.auth.uid].isActive == true);
-    }
-    
-    function isGameJudge(gameData) {
-      return isSignedIn() && 
-        gameData.players[request.auth.uid] != null && 
-        gameData.players[request.auth.uid].isJudge == true;
-    }
-    
-    function isGameCreator(gameData) {
-      return isSignedIn() && gameData.createdBy == request.auth.uid;
-    }
-    
-    function isValidGameData() {
-      let incomingData = request.resource.data;
-      return incomingData.players is map &&
-             incomingData.rounds is list &&
-             incomingData.currentRound is number &&
-             incomingData.maxRounds is number &&
-             incomingData.status is string;
-    }
-    
-    function isValidPromptData() {
-      let incomingData = request.resource.data;
-      return incomingData.text is string &&
-             incomingData.id is string;
-    }
-    
-    function isValidSubmissionData() {
-      let incomingData = request.resource.data;
-      return incomingData.gifId is string &&
-             incomingData.gifUrl is string &&
-             incomingData.playerId is string &&
-             incomingData.playerName is string &&
-             incomingData.round is number;
-    }
-
     // Users: Basic self-management
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isOwner(userId);
-    }
-
-    // Games: Core game logic rules
-    match /games/{gameId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidGameData();
-      allow update: if isSignedIn() && (
-        // Allow updates if user is a participant
-        isGameParticipant(resource.data) ||
-        // Allow updates if user is the judge and updating prompt-related fields
-        (isGameJudge(resource.data) && (
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['rounds']) ||
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['currentRound']) ||
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['status'])
-        )) ||
-        // Allow updates if user is the judge and selecting a winner
-        (isGameJudge(resource.data) && 
-         request.resource.data.diff(resource.data).affectedKeys()
-           .hasOnly(['rounds']) &&
-         request.resource.data.rounds[-1].winningSubmission != null)
-      );
-      allow delete: if isGameCreator(resource.data);
-
-      // Only an authenticated user creating a game where they are the host
-      allow create: if request.auth != null
-                       && request.resource.data.hostId == request.auth.uid;
-
-      // Update rules: Handle host actions, joining, and playing
-      allow update: if request.auth != null && (
-        // Condition 1: The user is the host (allow broad updates)
-        resource.data.hostId == request.auth.uid ||
-
-        // Condition 2: A player is joining the game
-        isPlayerJoining(request, resource) ||
-
-        // Condition 3: A player is submitting to their round
-        isPlayerSubmittingRound(request, resource) ||
-        
-        // Condition 4: The current judge is updating the prompt
-        isJudgeUpdatingPrompt(request, resource) ||
-        
-        // Condition 5: The current judge is starting the round
-        isJudgeStartingRound(request, resource) ||
-        
-        // Condition 6: The current judge is selecting a winner
-        isJudgeSelectingWinner(request, resource) ||
-
-        // Condition 7: The current judge is starting the next round
-        isStartingNextRound(request, resource)
-      );
-
-      // --- Helper Functions ---
-
-      // Checks if the request corresponds to a player joining the game
-      function isPlayerJoining(req, res) {
-        // Get the data before (res.data) and after (req.resource.data) the potential update
-        let before = res.data;
-        let after = req.resource.data;
-        // Identify the fields that changed
-        let changedKeys = after.diff(before).affectedKeys();
-
-        // Check all conditions for a valid join operation:
-        return
-          // 1. Only 'players' and potentially 'updatedAt' fields are allowed to change
-          (changedKeys.hasOnly(['players']) || changedKeys.hasOnly(['players', 'updatedAt'])) &&
-          // 2. Check that we're using appendMissingElements transform
-          // This is the key change - we're just checking that players is being modified
-          // without trying to access specific array indices
-          changedKeys.hasAny(['players']);
-      }
-
-      // Checks if the request corresponds to a player submitting to their round
-      function isPlayerSubmittingRound(req, res) {
-         let before = res.data;
-         let after = req.resource.data;
-         let changedKeys = after.diff(before).affectedKeys();
-         let userId = req.auth.uid;
-         let currentRoundIdx = before.currentRound - 1;
-
-         // Check conditions for submitting a round:
-         return
-           // 1. Only allow changes to 'rounds' and optionally 'updatedAt' fields
-           (changedKeys.hasOnly(['rounds']) || changedKeys.hasOnly(['rounds', 'updatedAt'])) &&
-           // 2. Make sure the current round index is valid
-           currentRoundIdx >= 0 && 
-           currentRoundIdx < before.rounds.size() &&
-           // 3. Make sure user is not the judge for the current round
-           before.rounds[currentRoundIdx].judgeId != userId &&
-           // 4. Check that the submissions array is growing in the current round
-           after.rounds.size() == before.rounds.size() &&
-           after.rounds[currentRoundIdx].submissions.size() > before.rounds[currentRoundIdx].submissions.size() &&
-           // 5. Verify the new submission belongs to the current user
-           after.rounds[currentRoundIdx].submissions[after.rounds[currentRoundIdx].submissions.size() - 1].playerId == userId;
-      }
-      
-      // Checks if the current judge is updating the prompt
-      function isJudgeUpdatingPrompt(req, res) {
-        let before = res.data;
-        let after = req.resource.data;
-        let changedKeys = after.diff(before).affectedKeys();
-        let userId = req.auth.uid;
-        let currentRoundIdx = before.currentRound - 1;
-        
-        // Check conditions for judge updating prompt:
-        return
-          // 1. Only allow changes to 'rounds' and optionally 'updatedAt' fields
-          (changedKeys.hasOnly(['rounds']) || changedKeys.hasOnly(['rounds', 'updatedAt'])) &&
-          // 2. Make sure the current round index is valid
-          currentRoundIdx >= 0 && 
-          currentRoundIdx < before.rounds.size() &&
-          // 3. Make sure user is the judge for the current round
-          before.rounds[currentRoundIdx].judgeId == userId &&
-          // 4. Check that the prompt is being updated
-          after.rounds.size() == before.rounds.size() &&
-          after.rounds[currentRoundIdx].prompt.id != before.rounds[currentRoundIdx].prompt.id;
-      }
-      
-      // Checks if the current judge is starting the round
-      function isJudgeStartingRound(req, res) {
-        let before = res.data;
-        let after = req.resource.data;
-        let changedKeys = after.diff(before).affectedKeys();
-        let userId = req.auth.uid;
-        let currentRoundIdx = before.currentRound - 1;
-        
-        // Check conditions for judge starting the round:
-        return
-          // 1. Only allow changes to 'rounds' and optionally 'updatedAt' fields
-          (changedKeys.hasOnly(['rounds']) || changedKeys.hasOnly(['rounds', 'updatedAt'])) &&
-          // 2. Make sure the current round index is valid
-          currentRoundIdx >= 0 && 
-          currentRoundIdx < before.rounds.size() &&
-          // 3. Make sure user is the judge for the current round
-          before.rounds[currentRoundIdx].judgeId == userId &&
-          // 4. Check that the hasStarted field is being updated to true
-          after.rounds.size() == before.rounds.size() &&
-          before.rounds[currentRoundIdx].hasStarted == false &&
-          after.rounds[currentRoundIdx].hasStarted == true;
-      }
-      
-      // Checks if the current judge is selecting a winner
-      function isJudgeSelectingWinner(req, res) {
-        let before = res.data;
-        let after = req.resource.data;
-        let changedKeys = after.diff(before).affectedKeys();
-        let userId = req.auth.uid;
-        let currentRoundIdx = before.currentRound - 1;
-        
-        // Check conditions for judge selecting a winner:
-        return
-          // 1. Only allow changes to 'rounds', 'players', 'status', and optionally 'updatedAt' fields
-          (changedKeys.hasOnly(['rounds', 'players', 'status']) || 
-           changedKeys.hasOnly(['rounds', 'players', 'status', 'updatedAt'])) &&
-          // 2. Make sure the current round index is valid
-          currentRoundIdx >= 0 && 
-          currentRoundIdx < before.rounds.size() &&
-          // 3. Make sure user is the judge for the current round
-          before.rounds[currentRoundIdx].judgeId == userId &&
-          // 4. Check that the winningSubmission is being set and round is being marked as complete
-          after.rounds.size() == before.rounds.size() &&
-          after.rounds[currentRoundIdx].isComplete == true &&
-          after.rounds[currentRoundIdx].winningSubmission is map;
-      }
-      
-      // Checks if the judge is starting a new round
-      function isStartingNextRound(req, res) {
-        let before = res.data;
-        let after = req.resource.data;
-        let changedKeys = after.diff(before).affectedKeys();
-        let userId = req.auth.uid;
-        let currentRoundIdx = before.currentRound - 1;
-        
-        // Check conditions for starting next round:
-        return
-          // 1. Allow changes to rounds, players, currentRound, and optionally updatedAt
-          (changedKeys.hasOnly(['rounds', 'players', 'currentRound']) || 
-           changedKeys.hasOnly(['rounds', 'players', 'currentRound', 'updatedAt'])) &&
-          // 2. Make sure the current round is valid
-          currentRoundIdx >= 0 && 
-          currentRoundIdx < before.rounds.size() &&
-          // 3. Make sure user is the judge for the current round
-          before.rounds[currentRoundIdx].judgeId == userId &&
-          // 4. Check that we're adding a new round and incrementing currentRound
-          after.rounds.size() == before.rounds.size() + 1 &&
-          after.currentRound == before.currentRound + 1;
-      }
-    }
-
-    // Prompts collection
-    match /prompts/{promptId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidPromptData();
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Submissions collection
+    // Allow access to other collections
+    match /prompts/{promptId} {
+      allow read, write: if request.auth != null;
+    }
+    
     match /submissions/{submissionId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isValidSubmissionData();
-      allow update, delete: if isSignedIn() && 
-        (resource.data.playerId == request.auth.uid || 
-         isGameJudge(get(/databases/$(database)/documents/games/$(resource.data.gameId)).data));
+      allow read, write: if request.auth != null;
     }
   }
 }

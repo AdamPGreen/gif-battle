@@ -331,11 +331,22 @@ export const leaveGame = async (gameId: string, playerId: string) => {
     
     const gameData = gameDoc.data() as Game;
     
-    // Set player to inactive instead of removing
+    // Find the player to update their status
+    const playerIndex = gameData.players.findIndex(p => p.id === playerId);
+    if (playerIndex === -1) {
+      throw new Error('Player not found in game');
+    }
+    
+    // Create a new players array with the updated player
+    const updatedPlayers = [...gameData.players];
+    updatedPlayers[playerIndex] = {
+      ...updatedPlayers[playerIndex],
+      isActive: false
+    };
+    
+    // Update the game document
     await updateDoc(gameRef, {
-      players: gameData.players.map(p => 
-        p.id === playerId ? { ...p, isActive: false } : p
-      ),
+      players: updatedPlayers,
       updatedAt: Date.now()
     });
     
@@ -346,7 +357,7 @@ export const leaveGame = async (gameId: string, playerId: string) => {
       if (activePlayers.length > 0) {
         const newHost = activePlayers[0];
         await updateDoc(gameRef, {
-          players: gameData.players.map(p => 
+          players: updatedPlayers.map(p => 
             p.id === newHost.id ? { ...p, isHost: true } : p
           ),
           hostId: newHost.id
@@ -716,14 +727,13 @@ export const startCurrentRound = async (gameId: string) => {
 export const getUserGames = async (userId: string) => {
   try {
     const gamesRef = collection(db, 'games');
+    
+    // With simplified security rules, we can get all recent games
+    // and filter client-side for better performance
     const q = query(
       gamesRef,
-      where('players', 'array-contains-any', [
-        { id: userId, isActive: true },
-        { id: userId, isActive: false }
-      ]),
       orderBy('updatedAt', 'desc'),
-      limit(10)
+      limit(20)
     );
     
     const querySnapshot = await getDocs(q);
@@ -731,13 +741,23 @@ export const getUserGames = async (userId: string) => {
     
     querySnapshot.forEach((doc) => {
       const gameData = doc.data() as Game;
-      games.push({
-        ...gameData,
-        id: doc.id
-      });
+      
+      // Check if this player is in the game (either active or inactive)
+      const playerExists = gameData.players.some(p => p.id === userId);
+      
+      if (playerExists) {
+        games.push({
+          ...gameData,
+          id: doc.id
+        });
+      }
     });
     
-    return games;
+    // Sort by updatedAt and limit to 10 most recent
+    return games
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 10);
+      
   } catch (error) {
     console.error('Error getting user games:', error);
     throw error;

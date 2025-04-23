@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, ArrowRight, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
 import type { User } from '../../types';
+import ActiveGamesList from './ActiveGamesList';
 
 interface JoinGameProps {
   user: User;
@@ -12,8 +13,15 @@ interface JoinGameProps {
 
 const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
   const [gameId, setGameId] = useState('');
-  const { joinExistingGame, loading } = useGameStore();
+  const { joinExistingGame, loading, getUserGames } = useGameStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch user's games when component mounts
+    if (user && user.id) {
+      getUserGames(user.id);
+    }
+  }, [user, getUserGames]);
 
   const extractGameId = (input: string): string | null => {
     // Try to match a full URL first
@@ -80,7 +88,7 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
           Enter a game ID or paste the invite link to join an existing game. You can join games that are waiting for players or already in progress.
         </p>
         
-        <form onSubmit={handleJoinGame} className="space-y-4">
+        <form onSubmit={handleJoinGame} className="space-y-4 mb-8">
           <div className="relative">
             <input
               type="text"
@@ -111,6 +119,15 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
             )}
           </motion.button>
         </form>
+        
+        {/* Divider */}
+        <div className="border-t border-gray-700 my-6"></div>
+        
+        {/* User's Games List */}
+        <div>
+          <h3 className="text-xl font-medium mb-4 text-white">Recent Games</h3>
+          <ActiveGamesList user={user} />
+        </div>
       </div>
     </motion.div>
   );

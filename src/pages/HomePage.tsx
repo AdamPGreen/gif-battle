@@ -248,10 +248,6 @@ const HomePage: React.FC = () => {
                     label: 'Join a Game',
                     content: (
                       <div className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
-                        <div className="mb-8">
-                          <h2 className="text-2xl font-bold text-white mb-4">My Games</h2>
-                          <ActiveGamesList user={user} />
-                        </div>
                         <JoinGame user={user} />
                       </div>
                     )

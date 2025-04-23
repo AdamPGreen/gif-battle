@@ -89,6 +89,9 @@ const useGameStore = create<GameStore>((set, get) => ({
     try {
       await leaveGame(gameId, userId);
       set({ game: null });
+      
+      // Fetch user games after leaving to update the list
+      await get().getUserGames(userId);
     } catch (error: any) {
       set({ error: error.message });
       throw error;
