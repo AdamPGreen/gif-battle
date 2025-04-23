@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Copy, ExternalLink, LogOut, Award, Users, Menu, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Copy, ExternalLink, LogOut, Award, Users, Menu, X, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
 import type { User, Player, Game } from '../../types';
 import WaitingRoom from './WaitingRoom';
 import GameRound from './GameRound';
 import GameResults from './GameResults';
+import RoundHistory from './RoundHistory';
 
 interface GameRoomProps {
   user: User;
@@ -27,6 +28,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   } = useGameStore();
   
   const [copied, setCopied] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!gameId) return;
@@ -140,6 +142,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
         game={game} 
         onCopyInvite={handleCopyInvite} 
         onLeaveGame={handleLeaveGame}
+        onOpenHistory={() => setIsHistoryOpen(true)}
         copied={copied}
       />
       
@@ -160,6 +163,16 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
           <GameResults game={game} />
         )}
       </div>
+      
+      <AnimatePresence>
+        {isHistoryOpen && (
+          <RoundHistory 
+            game={game} 
+            isOpen={isHistoryOpen} 
+            onClose={() => setIsHistoryOpen(false)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -168,12 +181,16 @@ interface GameHeaderProps {
   game: Game;
   onCopyInvite: () => void;
   onLeaveGame: () => void;
+  onOpenHistory: () => void;
   copied: boolean;
 }
 
-const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame, copied }) => {
+const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame, onOpenHistory, copied }) => {
   const activePlayers = game.players.filter(p => p.isActive);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Check if there are any completed rounds to show history button
+  const hasCompletedRounds = game.rounds.some(round => round.isComplete);
   
   return (
     <motion.div 
@@ -198,6 +215,18 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
               <Users size={18} />
               <span>{activePlayers.length} / {game.maxPlayers}</span>
             </div>
+            
+            {hasCompletedRounds && (
+              <motion.button
+                onClick={onOpenHistory}
+                className="flex items-center gap-2 text-white bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded-lg text-sm"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Clock size={16} />
+                <span>Round History</span>
+              </motion.button>
+            )}
             
             <motion.button
               onClick={onCopyInvite}
@@ -252,6 +281,21 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
                   <Users size={18} />
                   <span>Players: {activePlayers.length} / {game.maxPlayers}</span>
                 </div>
+                
+                {hasCompletedRounds && (
+                  <motion.button
+                    onClick={() => {
+                      onOpenHistory();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-3 text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg text-sm"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Clock size={18} />
+                    <span>View Round History</span>
+                  </motion.button>
+                )}
                 
                 <motion.button
                   onClick={() => {
