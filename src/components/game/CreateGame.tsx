@@ -30,7 +30,6 @@ const CreateGame: React.FC<CreateGameProps> = ({ user }) => {
         gameName
       );
       
-      toast.success('Game created successfully!');
       navigate(`/game/${gameId}`);
     } catch (error: any) {
       console.error('Error creating game:', error);

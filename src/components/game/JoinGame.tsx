@@ -45,14 +45,16 @@ const JoinGame: React.FC<JoinGameProps> = ({ user }) => {
       return;
     }
     
+    // Check if displayName is null or undefined and use a default value
+    const playerName = user.displayName || `Player_${user.id.slice(0, 5)}`;
+    
     try {
       await joinExistingGame(
         extractedGameId, 
         user.id, 
-        user.displayName as string
+        playerName
       );
       
-      toast.success('Joined game successfully!');
       navigate(`/game/${extractedGameId}`);
     } catch (error: any) {
       console.error('Error joining game:', error);

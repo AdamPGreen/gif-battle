@@ -27,7 +27,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     try {
       if (isSignUp) {
         await signUp(email, password, displayName);
-        toast.success('Account created successfully!');
       } else {
         await signIn(email, password);
         toast.success('Signed in successfully!');
