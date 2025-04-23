@@ -685,7 +685,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
             exit={{ opacity: 0 }}
           >
             <motion.div 
-              className="bg-gray-900 rounded-xl px-4 py-8 sm:px-8 sm:py-16 w-full max-w-md"
+              className="bg-black md:bg-gray-900 rounded-xl px-4 py-8 sm:px-8 sm:py-16 w-full max-w-md"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
@@ -733,7 +733,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
             exit={{ opacity: 0 }}
           >
             <motion.div 
-              className="bg-gray-900 rounded-xl px-4 py-8 sm:px-8 sm:py-16 w-full max-w-xl shadow-2xl"
+              className="bg-black md:bg-gray-900 rounded-xl px-4 py-8 sm:px-8 sm:py-16 w-full max-w-xl shadow-2xl"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}

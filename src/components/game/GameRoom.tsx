@@ -64,7 +64,6 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
     
     try {
       await leaveCurrentGame(gameId, user.id);
-      toast.success('Left the game');
       navigate('/');
     } catch (error: any) {
       console.error('Error leaving game:', error);
@@ -74,7 +73,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-black md:bg-gray-900">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white text-xl">Loading game...</p>
@@ -85,7 +84,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-black md:bg-gray-900">
         <div className="text-center text-red-500 bg-black bg-opacity-70 p-8 rounded-xl">
           <p className="text-2xl mb-4">Error</p>
           <p>{error}</p>
@@ -102,7 +101,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   
   if (!game) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-black md:bg-gray-900">
         <div className="text-center text-white">
           <p className="text-xl mb-4">Game not found</p>
           <button 
@@ -121,7 +120,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   
   if (!currentPlayer || !currentPlayer.isActive) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-black md:bg-gray-900">
         <div className="text-center text-white">
           <p className="text-xl mb-4">You are not a player in this game</p>
           <button 
@@ -136,7 +135,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
   }
   
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-black md:bg-gray-900 text-white">
       <GameHeader 
         game={game} 
         onCopyInvite={handleCopyInvite} 

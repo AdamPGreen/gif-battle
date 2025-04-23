@@ -68,7 +68,7 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({ game, isHost, currentPlayer }
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="bg-black bg-opacity-90 backdrop-blur-sm border border-purple-600 rounded-xl p-8 shadow-lg">
+      <div className="bg-black md:bg-opacity-90 md:backdrop-blur-sm md:border md:border-purple-600 rounded-xl p-8 shadow-lg">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent">
             Waiting for Players
