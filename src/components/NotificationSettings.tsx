@@ -87,79 +87,79 @@ export default function NotificationSettings({ userId }: NotificationSettingsPro
   }
 
   if (isLoading) {
-    return <div className="p-4">Loading notification settings...</div>;
+    return <div className="text-gray-300">Loading notification settings...</div>;
   }
 
   if (!notificationsSupported) {
     return (
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
+      <div className="bg-gray-800 border border-amber-700 rounded-md p-3 text-amber-400 text-sm">
         Push notifications are not supported in your browser.
       </div>
     );
   }
 
   return (
-    <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
-      <h3 className="text-lg font-semibold mb-4">Notification Settings</h3>
-      
-      <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <label htmlFor="enable-notifications" className="font-medium">
+    <div className="bg-gray-800 rounded-md p-3 space-y-4">
+      <div>
+        <div className="mb-2">
+          <label htmlFor="enable-notifications" className="text-white font-medium block mb-1">
             Enable Push Notifications
           </label>
+          <p className="text-sm text-gray-400 mb-2">
+            Get notified about game events even when you're not actively viewing the game.
+          </p>
           <button
             id="enable-notifications"
             disabled={isLoading}
             onClick={toggleNotifications}
-            className={`px-4 py-2 rounded-md ${
+            className={`px-4 py-2 rounded-md text-sm ${
               notificationsEnabled
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-200 text-gray-800'
+                ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                : 'bg-gray-700 hover:bg-gray-600 text-white'
             }`}
           >
             {isLoading ? 'Loading...' : notificationsEnabled ? 'Enabled' : 'Disabled'}
           </button>
         </div>
-        <p className="text-sm text-gray-500 mt-1">
-          Get notified about game events even when you're not actively viewing the game.
-        </p>
       </div>
 
       {notificationsEnabled && (
-        <div className="space-y-3">
-          <h4 className="font-medium">Notification Types</h4>
+        <div className="pt-2 border-t border-gray-700">
+          <h4 className="text-white font-medium mb-2">Notification Types</h4>
           
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="new-round"
-              checked={preferences.newRound}
-              onChange={(e) => handlePreferenceChange('newRound', e.target.checked)}
-              className="mr-3"
-            />
-            <label htmlFor="new-round">New Round Started (For Players)</label>
-          </div>
-          
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="winner-picked"
-              checked={preferences.winnerPicked}
-              onChange={(e) => handlePreferenceChange('winnerPicked', e.target.checked)}
-              className="mr-3"
-            />
-            <label htmlFor="winner-picked">Winner Picked</label>
-          </div>
-          
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="all-gifs-submitted"
-              checked={preferences.allGifsSubmitted}
-              onChange={(e) => handlePreferenceChange('allGifsSubmitted', e.target.checked)}
-              className="mr-3"
-            />
-            <label htmlFor="all-gifs-submitted">All GIFs Submitted (For Judges)</label>
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="new-round"
+                checked={preferences.newRound}
+                onChange={(e) => handlePreferenceChange('newRound', e.target.checked)}
+                className="mr-3 rounded border-gray-700 bg-gray-800 text-purple-600 focus:ring-0 focus:ring-offset-0"
+              />
+              <label htmlFor="new-round" className="text-white text-sm">New Round Started (For Players)</label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="winner-picked"
+                checked={preferences.winnerPicked}
+                onChange={(e) => handlePreferenceChange('winnerPicked', e.target.checked)}
+                className="mr-3 rounded border-gray-700 bg-gray-800 text-purple-600 focus:ring-0 focus:ring-offset-0"
+              />
+              <label htmlFor="winner-picked" className="text-white text-sm">Winner Picked</label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="all-gifs-submitted"
+                checked={preferences.allGifsSubmitted}
+                onChange={(e) => handlePreferenceChange('allGifsSubmitted', e.target.checked)}
+                className="mr-3 rounded border-gray-700 bg-gray-800 text-purple-600 focus:ring-0 focus:ring-offset-0"
+              />
+              <label htmlFor="all-gifs-submitted" className="text-white text-sm">All GIFs Submitted (For Judges)</label>
+            </div>
           </div>
         </div>
       )}

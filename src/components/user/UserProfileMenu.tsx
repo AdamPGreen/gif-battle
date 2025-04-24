@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Camera, X, Check, LogOut, Copy, Clock, Trophy, Users } from 'lucide-react';
+import { User, Camera, X, Check, LogOut, Copy, Clock, Trophy, Users, Bell } from 'lucide-react';
 import { updateUserProfile } from '../../services/auth';
+import NotificationSettings from '../NotificationSettings';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
 import type { User as UserType } from '../../types';
@@ -204,6 +205,21 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
                   <span>Edit Profile</span>
                 </button>
               
+                <button
+                  onClick={() => {
+                    handleEditProfile();
+                    // Add a small delay to ensure modal is open before scrolling
+                    setTimeout(() => {
+                      const notificationSection = document.querySelector('.notification-settings-section');
+                      notificationSection?.scrollIntoView({ behavior: 'smooth' });
+                    }, 200);
+                  }}
+                  className="w-full py-2 px-3 text-left text-sm hover:bg-gray-700 bg-gray-800 rounded-md transition-colors flex items-center gap-2"
+                >
+                  <Bell size={16} />
+                  <span>Notification Settings</span>
+                </button>
+              
                 {/* Game-specific actions */}
                 {gameActions && gameActions.hasCompletedRounds && (
                   <>
@@ -267,7 +283,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
           }}
         >
           <motion.div 
-            className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 my-4 text-white"
+            className="bg-gray-900 rounded-xl p-6 max-w-md w-full mx-4 my-4 text-white overflow-y-auto max-h-[90vh]"
             initial={{ opacity: 0, scale: 0.9, y: 0 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 0 }}
@@ -328,35 +344,40 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
                 />
               </div>
               
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={handleCancel}
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
-                  disabled={isSubmitting}
                 >
                   Cancel
                 </button>
-                
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                   disabled={isSubmitting}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1"
                 >
                   {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Saving...</span>
-                    </>
+                    <span>Saving...</span>
                   ) : (
                     <>
-                      <Check size={16} />
-                      <span>Save Changes</span>
+                      <Check size={16} /> 
+                      <span>Save</span>
                     </>
                   )}
                 </button>
               </div>
             </form>
+            
+            {/* Notification Settings Section */}
+            <div className="mt-8 border-t border-gray-700 pt-6 notification-settings-section">
+              <div className="flex items-center gap-2 mb-4">
+                <Bell size={20} className="text-purple-400" />
+                <h3 className="text-lg font-semibold text-white">Notifications</h3>
+              </div>
+              
+              {user && <NotificationSettings userId={user.id} />}
+            </div>
           </motion.div>
         </div>,
         document.body
