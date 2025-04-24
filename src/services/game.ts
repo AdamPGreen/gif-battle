@@ -703,12 +703,16 @@ export const startCurrentRound = async (gameId: string) => {
     }
     
     const gameData = gameDoc.data() as Game;
-    const currentRound = gameData.rounds[gameData.currentRound - 1];
+    const currentRoundIndex = gameData.currentRound - 1;
     
-    // Mark the round as started
+    if (currentRoundIndex < 0 || currentRoundIndex >= gameData.rounds.length) {
+      throw new Error('Invalid round index');
+    }
+    
+    // Update the current round to mark it as started
     const updatedRounds = [...gameData.rounds];
-    updatedRounds[gameData.currentRound - 1] = {
-      ...currentRound,
+    updatedRounds[currentRoundIndex] = {
+      ...updatedRounds[currentRoundIndex],
       hasStarted: true
     };
     

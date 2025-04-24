@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, UserCircle, Upload, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, UserCircle, Upload, Save, Loader2, Bell } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { updateUserProfile } from '../services/auth';
+import NotificationSettings from '../components/NotificationSettings';
 import toast from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
@@ -104,7 +105,7 @@ const ProfilePage: React.FC = () => {
         </motion.button>
         
         <motion.div 
-          className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm"
+          className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -186,6 +187,22 @@ const ProfilePage: React.FC = () => {
             </motion.button>
           </form>
         </motion.div>
+        
+        {user && (
+          <motion.div 
+            className="bg-black bg-opacity-70 border border-purple-800 rounded-xl p-6 shadow-xl backdrop-blur-sm"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Bell size={24} className="text-purple-400" />
+              <span>Notifications</span>
+            </h2>
+            
+            <NotificationSettings userId={user.uid} />
+          </motion.div>
+        )}
       </div>
     </div>
   );
