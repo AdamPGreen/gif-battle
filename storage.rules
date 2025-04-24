@@ -5,9 +5,17 @@ rules_version = '2';
 //    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      // Allow read/write access to all users under any path if they are authenticated
-      allow read, write: if request.auth != null;
+    // Match the user's avatar path: avatars/{userId}/{fileName}
+    // We use {fileName} instead of a fixed name to allow different file types or updates.
+    match /avatars/{userId}/{fileName} {
+      // Allow public read access to anyone
+      allow read;
+      // Allow write only if the requesting user's ID matches the {userId} in the path
+      // and the uploaded file is an image (optional but recommended)
+      // Limit file size (e.g., 5MB max)
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
     }
   }
 }

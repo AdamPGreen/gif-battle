@@ -104,8 +104,14 @@ export const updateUserProfile = async (displayName: string, avatarFile: File | 
     
     // If a new avatar file is provided, upload it to Firebase Storage
     if (avatarFile) {
-      const storageRef = ref(storage, `avatars/${auth.currentUser.uid}`);
-      await uploadBytes(storageRef, avatarFile);
+      // Get file extension
+      const fileExtension = avatarFile.name.split('.').pop();
+      const fileName = `avatar.${fileExtension}`;
+      const storagePath = `avatars/${auth.currentUser.uid}/${fileName}`;
+      
+      const storageRef = ref(storage, storagePath);
+      // Upload with metadata (content type)
+      await uploadBytes(storageRef, avatarFile, { contentType: avatarFile.type });
       photoURL = await getDownloadURL(storageRef);
     }
     
