@@ -763,3 +763,40 @@ export const getUserGames = async (userId: string) => {
     throw error;
   }
 };
+
+export const updatePlayerName = async (gameId: string, playerId: string, newName: string) => {
+  try {
+    const gameRef = doc(db, 'games', gameId);
+    const gameDoc = await getDoc(gameRef);
+    
+    if (!gameDoc.exists()) {
+      throw new Error('Game not found');
+    }
+    
+    const gameData = gameDoc.data() as Game;
+    
+    // Find the player to update
+    const playerIndex = gameData.players.findIndex(p => p.id === playerId);
+    if (playerIndex === -1) {
+      throw new Error('Player not found in game');
+    }
+    
+    // Create a new players array with the updated player name
+    const updatedPlayers = [...gameData.players];
+    updatedPlayers[playerIndex] = {
+      ...updatedPlayers[playerIndex],
+      name: newName
+    };
+    
+    // Update the game document
+    await updateDoc(gameRef, {
+      players: updatedPlayers,
+      updatedAt: Date.now()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating player name:', error);
+    throw error;
+  }
+};

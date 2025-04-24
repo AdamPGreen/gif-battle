@@ -1,17 +1,24 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, Users, Play, Crown, Clock, Copy, Share } from 'lucide-react';
+import { Users, Play, Crown, Clock, Copy, Share } from 'lucide-react';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
-import type { Game, Player } from '../../types';
+import type { Game, Player, User } from '../../types';
+import PlayersList from './PlayersList';
 
 interface WaitingRoomProps {
   game: Game;
   isHost: boolean;
   currentPlayer: Player;
+  currentUser?: User;
 }
 
-const WaitingRoom: React.FC<WaitingRoomProps> = ({ game, isHost, currentPlayer }) => {
+const WaitingRoom: React.FC<WaitingRoomProps> = ({ 
+  game, 
+  isHost, 
+  currentPlayer,
+  currentUser 
+}) => {
   const { startCurrentGame, loading } = useGameStore();
   
   const activePlayers = game.players.filter(p => p.isActive);
@@ -103,35 +110,17 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({ game, isHost, currentPlayer }
           </motion.button>
         </div>
         
-        <div className="mb-8 max-h-64 overflow-y-auto">
+        <div className="mb-8">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Users size={20} className="text-cyan-400" />
             <span>Players ({activePlayers.length}/{game.maxPlayers})</span>
           </h3>
           
-          <div className="grid gap-2">
-            {activePlayers.map((player) => (
-              <div 
-                key={player.id}
-                className={`flex items-center gap-3 p-3 rounded-lg ${
-                  player.id === currentPlayer.id 
-                    ? 'bg-purple-900 bg-opacity-50' 
-                    : 'bg-gray-800'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                  <User size={16} className="text-white" />
-                </div>
-                <span className="flex-grow font-medium">{player.name}</span>
-                {player.isHost && (
-                  <span className="px-2 py-1 text-xs bg-yellow-500 text-black rounded-full flex items-center gap-1">
-                    <Crown size={12} />
-                    Host
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+          <PlayersList 
+            game={game} 
+            currentPlayer={currentPlayer} 
+            currentUser={currentUser} 
+          />
         </div>
         
         <div className="text-center">

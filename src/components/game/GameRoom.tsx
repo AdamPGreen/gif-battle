@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Copy, ExternalLink, LogOut, Award, Users, Menu, X, Clock } from 'lucide-react';
+import { Copy, ExternalLink, LogOut, Award, Users, Menu, X, Clock, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../../store/gameStore';
 import toast from 'react-hot-toast';
@@ -27,7 +27,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
     loadGame, 
     joinExistingGame, 
     leaveCurrentGame,
-    setCurrentUser 
+    setCurrentUser,
+    subscribeToGameUpdates
   } = useGameStore();
   
   const [copied, setCopied] = useState(false);
@@ -35,6 +36,10 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
   const [showRoundResultsModal, setShowRoundResultsModal] = useState(false);
   const [lastCompletedRoundId, setLastCompletedRoundId] = useState<number | null>(null);
   const [currentUser, setLocalUser] = useState<User>(initialUser);
+  
+  // Refs for tracking notification states
+  const roundStartRef = useRef<{ [key: number]: boolean }>({});
+  const roundCompleteRef = useRef<{ [key: number]: boolean }>({});
   
   // Initialize PowerGlitch
   useEffect(() => {
@@ -66,14 +71,23 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
     });
   }, []);
   
+  // Load the game and set up real-time updates
   useEffect(() => {
-    // Load the game when component mounts
     if (gameId) {
+      // Initial load of the game
       loadGame(gameId);
+      
+      // Set up real-time updates
+      const unsubscribe = subscribeToGameUpdates(gameId);
+      
+      // Clean up the subscription when component unmounts
+      return () => {
+        unsubscribe();
+      };
     }
-  }, [gameId, loadGame]);
+  }, [gameId, loadGame, subscribeToGameUpdates]);
   
-  // Check for newly completed rounds
+  // Find the last completed round
   useEffect(() => {
     if (game?.rounds) {
       // Find the most recently completed round
@@ -83,14 +97,57 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
           round.id > latest.id ? round : latest
         );
         
-        // Show result modal only for newly completed rounds
-        if (mostRecentRound.id !== lastCompletedRoundId) {
-          setLastCompletedRoundId(mostRecentRound.id);
-          setShowRoundResultsModal(true);
-        }
+        // Update the lastCompletedRoundId
+        setLastCompletedRoundId(mostRecentRound.id);
       }
     }
-  }, [game?.rounds, lastCompletedRoundId]);
+  }, [game?.rounds]);
+  
+  // Notify users about important game state changes
+  useEffect(() => {
+    if (!game) return;
+    
+    // Show toast when a round starts
+    const currentRound = game.rounds[game.currentRound - 1];
+    
+    if (currentRound?.hasStarted && !roundStartRef.current[game.currentRound]) {
+      // Record that we've shown this notification
+      roundStartRef.current[game.currentRound] = true;
+      
+      toast.success(`Round ${game.currentRound} has started!`, {
+        id: `round-start-${game.currentRound}`,
+        duration: 3000
+      });
+    }
+    
+    // Show toast when a round completes
+    if (currentRound?.isComplete && !roundCompleteRef.current[game.currentRound]) {
+      // Record that we've shown this notification
+      roundCompleteRef.current[game.currentRound] = true;
+      
+      const winnerName = currentRound.winningSubmission?.playerName;
+      if (winnerName) {
+        toast.success(`Round over! ${winnerName} won the round!`, {
+          id: `round-complete-${game.currentRound}`,
+          duration: 4000
+        });
+      }
+    }
+    
+  }, [game]);
+  
+  // Add event listener for "VIEW_LAST_ROUND_RESULTS" event
+  useEffect(() => {
+    const handleViewLastRoundResults = () => {
+      setShowRoundResultsModal(true);
+    };
+    
+    window.addEventListener('VIEW_LAST_ROUND_RESULTS', handleViewLastRoundResults);
+    
+    return () => {
+      window.removeEventListener('VIEW_LAST_ROUND_RESULTS', handleViewLastRoundResults);
+    };
+  }, []);
   
   const handleCopyInvite = () => {
     if (!gameId) return;
@@ -119,12 +176,25 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
     }
   };
   
-  const handleUserUpdate = (updatedUser: User) => {
+  const handleUserUpdate = async (updatedUser: User) => {
     // Update local state
     setLocalUser(updatedUser);
     
     // Update the store
     setCurrentUser(updatedUser);
+    
+    // Also update the player name in the game if we're in a game
+    if (gameId && game) {
+      try {
+        // Extract the updatePlayerName from the store
+        const { updatePlayerName } = useGameStore.getState();
+        // Call the function with the updated user display name
+        await updatePlayerName(gameId, updatedUser.id, updatedUser.displayName || '');
+      } catch (error) {
+        console.error('Failed to update player name in game:', error);
+        // Don't show error toast as the profile was successfully updated
+      }
+    }
   };
   
   if (loading) {
@@ -197,14 +267,21 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
         onCopyInvite={handleCopyInvite} 
         onLeaveGame={handleLeaveGame}
         onOpenHistory={() => setIsHistoryOpen(true)}
+        onViewLastRoundResults={() => setShowRoundResultsModal(true)}
         copied={copied}
         user={currentUser}
         onUserUpdate={handleUserUpdate}
+        hasCompletedRounds={lastCompletedRoundId !== null}
       />
       
       <div className="container mx-auto px-4 py-2 md:py-8">
         {game.status === 'waiting' && (
-          <WaitingRoom game={game} isHost={isHost} currentPlayer={currentPlayer} />
+          <WaitingRoom 
+            game={game} 
+            isHost={isHost} 
+            currentPlayer={currentPlayer} 
+            currentUser={currentUser}
+          />
         )}
         
         {game.status === 'playing' && (
@@ -248,9 +325,11 @@ interface GameHeaderProps {
   onCopyInvite: () => void;
   onLeaveGame: () => void;
   onOpenHistory: () => void;
+  onViewLastRoundResults: () => void;
   copied: boolean;
   user: User;
   onUserUpdate: (updatedUser: User) => void;
+  hasCompletedRounds: boolean;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({ 
@@ -258,15 +337,13 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   onCopyInvite, 
   onLeaveGame, 
   onOpenHistory, 
+  onViewLastRoundResults,
   copied,
   user,
-  onUserUpdate
+  onUserUpdate,
+  hasCompletedRounds
 }) => {
   const activePlayers = game.players.filter(p => p.isActive);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Check if there are any completed rounds to show history button
-  const hasCompletedRounds = game.rounds.some(round => round.isComplete);
   
   return (
     <motion.div 
@@ -275,136 +352,53 @@ const GameHeader: React.FC<GameHeaderProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="container mx-auto px-4 sm:px-6 h-[65px] flex items-center">
+      <div className="container mx-auto px-4 sm:px-6 h-[60px] flex items-center">
         <div className="flex justify-between items-center w-full">
-          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-xl md:text-2xl font-bold whitespace-nowrap">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden flex-shrink-1 mr-3">
+            <span className="glitch-text bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 bg-clip-text text-transparent text-xl md:text-2xl font-bold whitespace-nowrap flex-shrink-0">
               <span className="md:hidden">GB</span>
               <span className="hidden md:inline">GIF BATTLE</span>
             </span>
-            <span className="text-gray-400 text-xl md:text-2xl">|</span>
-            <span className="text-xl md:text-2xl truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">{game.name}</span>
+            <span className="text-gray-400 text-xl md:text-2xl flex-shrink-0">|</span>
+            <span className="text-xl md:text-2xl truncate w-full max-w-[calc(100vw-130px)] xs:max-w-[220px] sm:max-w-[360px] md:max-w-[500px]">{game.name}</span>
           </div>
           
-          {/* Desktop Controls */}
-          <div className="hidden md:flex items-center gap-4">
-            <div className="flex items-center gap-2 text-cyan-400 px-3 py-1 rounded-full bg-gray-800">
-              <Users size={18} />
-              <span>{activePlayers.length} / {game.maxPlayers}</span>
-            </div>
-            
-            {hasCompletedRounds && (
-              <motion.button
-                onClick={onOpenHistory}
-                className="flex items-center gap-2 text-white bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded-lg text-sm"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Clock size={16} />
-                <span>Round History</span>
-              </motion.button>
-            )}
-            
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Copy Invite Button */}
             <motion.button
               onClick={onCopyInvite}
-              className="flex items-center gap-2 text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-lg text-sm"
+              className="h-9 flex items-center justify-center gap-1 text-white bg-gray-800 hover:bg-gray-700 px-3 rounded-lg text-sm"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               {copied ? (
-                <>
-                  <span>Copied!</span>
-                </>
+                <span className="py-1.5">Copied!</span>
               ) : (
                 <>
-                  <Copy size={16} />
-                  <span>Copy Invite</span>
+                  <Copy size={16} className="flex-shrink-0" />
+                  <span className="hidden sm:inline py-1.5">Copy Invite</span>
                 </>
               )}
             </motion.button>
             
-            <motion.button
-              onClick={onLeaveGame}
-              className="flex items-center gap-2 text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-lg text-sm"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title="Return to homepage"
-            >
-              <LogOut size={16} />
-              <span>Exit Game</span>
-            </motion.button>
-            
-            <UserProfileMenu user={user} onUserUpdate={onUserUpdate} />
+            {/* User Profile Menu with Game Actions */}
+            <div className="flex items-center">
+              <UserProfileMenu 
+                user={user} 
+                onUserUpdate={onUserUpdate} 
+                gameActions={{
+                  onCopyInvite,
+                  onLeaveGame,
+                  onOpenHistory,
+                  onViewLastRoundResults,
+                  hasCompletedRounds,
+                  playersCount: activePlayers.length,
+                  maxPlayers: game.maxPlayers,
+                  copied
+                }}
+              />
+            </div>
           </div>
-          
-          {/* Mobile Controls */}
-          <div className="md:hidden flex items-center gap-4">
-            <UserProfileMenu user={user} onUserUpdate={onUserUpdate} />
-            
-            {hasCompletedRounds && (
-              <motion.button
-                onClick={onOpenHistory}
-                className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 text-white"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                aria-label="View round history"
-              >
-                <Clock size={20} />
-              </motion.button>
-            )}
-            
-            <motion.button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 text-white"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </motion.button>
-          </div>
-          
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <motion.div 
-              className="absolute top-[65px] left-0 right-0 bg-black bg-opacity-95 border-b border-purple-600 p-4 md:hidden z-[100]"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-cyan-400 px-3 py-2 rounded-lg bg-gray-800/50 mb-2">
-                  <Users size={18} />
-                  <span>Players: {activePlayers.length} / {game.maxPlayers}</span>
-                </div>
-                
-                <motion.button
-                  onClick={() => {
-                    onCopyInvite();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex items-center justify-center gap-2 w-full py-3 text-white bg-purple-600 hover:bg-purple-700 rounded-lg text-sm"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Copy size={18} />
-                  <span>Copy Invite Link</span>
-                </motion.button>
-                
-                <motion.button
-                  onClick={() => {
-                    onLeaveGame();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex items-center justify-center gap-2 w-full py-3 text-white bg-red-600 hover:bg-red-700 rounded-lg text-sm"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <LogOut size={18} />
-                  <span>Exit Game</span>
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
         </div>
       </div>
     </motion.div>

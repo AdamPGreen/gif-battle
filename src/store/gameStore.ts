@@ -13,7 +13,8 @@ import {
   subscribeToGame,
   regenerateRoundPrompt,
   startCurrentRound,
-  getUserGames
+  getUserGames,
+  updatePlayerName
 } from '../services/game';
 
 interface GameStore extends GameState {
@@ -36,6 +37,7 @@ interface GameStore extends GameState {
   resetGameState: () => void;
   userGames: Game[];
   getUserGames: (userId: string) => Promise<Game[]>;
+  updatePlayerName: (gameId: string, playerId: string, playerName: string) => Promise<void>;
 }
 
 const useGameStore = create<GameStore>((set, get) => ({
@@ -246,6 +248,17 @@ const useGameStore = create<GameStore>((set, get) => ({
       throw error;
     } finally {
       set({ loading: false });
+    }
+  },
+
+  updatePlayerName: async (gameId, playerId, playerName) => {
+    try {
+      await updatePlayerName(gameId, playerId, playerName);
+      // Reload the game to reflect the updated player name
+      await get().loadGame(gameId);
+    } catch (error: any) {
+      console.error('Error updating player name:', error);
+      throw error;
     }
   }
 }));

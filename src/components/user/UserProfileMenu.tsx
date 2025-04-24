@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Camera, X, Check } from 'lucide-react';
+import { User, Camera, X, Check, LogOut, Copy, Clock, Trophy, Users } from 'lucide-react';
 import { updateUserProfile } from '../../services/auth';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
@@ -9,9 +9,24 @@ import type { User as UserType } from '../../types';
 interface UserProfileMenuProps {
   user: UserType;
   onUserUpdate: (updatedUser: UserType) => void;
+  // New game-related props
+  gameActions?: {
+    onCopyInvite: () => void;
+    onLeaveGame: () => void;
+    onOpenHistory: () => void;
+    onViewLastRoundResults: () => void;
+    hasCompletedRounds: boolean;
+    playersCount: number;
+    maxPlayers: number;
+    copied: boolean;
+  };
 }
 
-const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ user, onUserUpdate }) => {
+const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ 
+  user, 
+  onUserUpdate,
+  gameActions 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user.displayName || '');
@@ -20,6 +35,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ user, onUserUpdate })
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   
   const handleAvatarClick = () => {
     setIsOpen(!isOpen);
@@ -88,6 +104,8 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ user, onUserUpdate })
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isEditing) {
         handleCancel();
+      } else if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
       }
     };
     
@@ -96,7 +114,22 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ user, onUserUpdate })
     return () => {
       window.removeEventListener('keydown', handleEsc);
     };
-  }, [isEditing]);
+  }, [isEditing, isOpen]);
+
+  // Handle click outside to close menu
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleOutsideClick);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isOpen]);
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -112,11 +145,11 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ user, onUserUpdate })
   }, [isEditing]);
   
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       {/* Avatar Button */}
       <button 
         onClick={handleAvatarClick}
-        className="w-10 h-10 rounded-full overflow-hidden focus:outline-none transition-transform hover:scale-110"
+        className="h-9 w-9 rounded-full overflow-hidden focus:outline-none transition-transform hover:scale-110 flex items-center justify-center"
         aria-label="User Profile"
       >
         {user.photoURL ? (
@@ -136,7 +169,7 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ user, onUserUpdate })
       <AnimatePresence>
         {isOpen && !isEditing && (
           <motion.div 
-            className="absolute right-0 top-12 bg-gray-900 border border-purple-600 rounded-lg shadow-lg min-w-[200px] z-50"
+            className="absolute right-0 top-11 bg-gray-900 border border-purple-600 rounded-lg shadow-lg min-w-[250px] z-50"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -162,12 +195,61 @@ const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ user, onUserUpdate })
                 </div>
               </div>
               
-              <button
-                onClick={handleEditProfile}
-                className="w-full py-2 px-3 text-left text-sm hover:bg-gray-800 rounded-md transition-colors"
-              >
-                Edit Profile
-              </button>
+              <div className="border-t border-gray-700 pt-3 mt-2 space-y-3">
+                <button
+                  onClick={handleEditProfile}
+                  className="w-full py-2 px-3 text-left text-sm hover:bg-gray-700 bg-gray-800 rounded-md transition-colors flex items-center gap-2"
+                >
+                  <User size={16} />
+                  <span>Edit Profile</span>
+                </button>
+              
+                {/* Game-specific actions */}
+                {gameActions && gameActions.hasCompletedRounds && (
+                  <>
+                    <motion.button
+                      onClick={() => {
+                        gameActions.onOpenHistory();
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full text-white bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-md text-sm"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Clock size={16} />
+                      <span>Round History</span>
+                    </motion.button>
+                    
+                    <motion.button
+                      onClick={() => {
+                        gameActions.onViewLastRoundResults();
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full text-white bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-md text-sm"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Trophy size={16} />
+                      <span>Last Round Results</span>
+                    </motion.button>
+                  </>
+                )}
+                
+                {gameActions && (
+                  <motion.button
+                    onClick={() => {
+                      gameActions.onLeaveGame();
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center gap-2 w-full text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md text-sm"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <LogOut size={16} />
+                    <span>Exit Game</span>
+                  </motion.button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

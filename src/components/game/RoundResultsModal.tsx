@@ -1,8 +1,20 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, ThumbsUp, Sparkles } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import type { Round, GifSubmission, Player } from '../../types';
 import confetti from 'canvas-confetti';
+
+// Define keyframe animation for the gradient text
+const gradientAnimation = `
+  @keyframes gradient {
+    0% {
+      background-position: 0% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+`;
 
 interface RoundResultsModalProps {
   isOpen: boolean;
@@ -11,7 +23,8 @@ interface RoundResultsModalProps {
   currentPlayer: Player;
 }
 
-const RoundResultsModal: React.FC<RoundResultsModalProps> = ({ 
+// Memoize the modal to prevent unnecessary renders
+const RoundResultsModal: React.FC<RoundResultsModalProps> = memo(({ 
   isOpen, 
   onClose, 
   round, 
@@ -19,6 +32,18 @@ const RoundResultsModal: React.FC<RoundResultsModalProps> = ({
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const isWinner = round.winningSubmission?.playerId === currentPlayer.id;
+  const [confettiTriggered, setConfettiTriggered] = useState(false);
+  
+  // Reset confetti state if the round changes
+  useEffect(() => {
+    setConfettiTriggered(false);
+  }, [round.id]);
+  
+  // Add a close handler that resets state properly
+  const handleClose = () => {
+    setConfettiTriggered(false);
+    onClose();
+  };
   
   // Prevent event propagation to ensure clicks inside modal don't close it
   const handleModalClick = (e: React.MouseEvent) => {
@@ -27,7 +52,10 @@ const RoundResultsModal: React.FC<RoundResultsModalProps> = ({
 
   // Trigger confetti animation if current player is the winner
   useEffect(() => {
-    if (isOpen && isWinner) {
+    // Only trigger once when modal opens and user is winner
+    if (isOpen && isWinner && !confettiTriggered) {
+      setConfettiTriggered(true);
+      
       const duration = 3000;
       const animationEnd = Date.now() + duration;
       
@@ -67,7 +95,15 @@ const RoundResultsModal: React.FC<RoundResultsModalProps> = ({
       
       return () => clearInterval(interval);
     }
-  }, [isOpen, isWinner]);
+    
+    // Reset confetti trigger when modal closes
+    if (!isOpen) {
+      setConfettiTriggered(false);
+    }
+  }, [isOpen, isWinner, confettiTriggered]);
+
+  // Only render content when modal is open to improve performance
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
@@ -77,46 +113,84 @@ const RoundResultsModal: React.FC<RoundResultsModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={handleClose}
         >
+          {/* Inject the CSS animation */}
+          <style dangerouslySetInnerHTML={{ __html: gradientAnimation }} />
+          
           <motion.div
             ref={modalRef}
-            className="bg-black md:bg-gray-900 w-full max-w-4xl rounded-xl border border-purple-600 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+            className="bg-black md:bg-gray-900 w-full max-w-4xl rounded-xl border border-purple-600 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto relative"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
             transition={{ type: "spring", bounce: 0.2 }}
             onClick={handleModalClick}
           >
+            <button 
+              onClick={handleClose}
+              className="absolute top-3 right-3 p-1 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors z-10"
+            >
+              <X size={20} />
+            </button>
+            
             <div className="p-4 md:p-6">
               <div className="text-center mb-4">
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                  className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3"
-                >
-                  <Trophy size={24} className="text-white" />
-                </motion.div>
-                
-                <h2 className="text-xl md:text-2xl font-bold mb-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
+                <h2 className="text-base md:text-lg font-medium mb-2 text-gray-300">
                   Round {round.id} Results
                 </h2>
                 
                 {isWinner ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex items-center justify-center gap-2 text-cyan-400 text-lg font-medium"
+                    animate={{
+                      opacity: 1, 
+                      y: 0
+                    }}
+                    transition={{ 
+                      opacity: { delay: 0.3, duration: 0.5 },
+                      y: { delay: 0.3, duration: 0.5 }
+                    }}
                   >
-                    <Sparkles size={16} className="text-yellow-400" />
-                    <span>You won this round!</span>
-                    <Sparkles size={16} className="text-yellow-400" />
+                    <span 
+                      className="text-2xl md:text-3xl font-bold flex items-center justify-center gap-2 bg-clip-text text-transparent"
+                      style={{
+                        backgroundImage: "linear-gradient(90deg, #6E00FF 0%, #FF0099 50%, #00D1FF 100%)",
+                        backgroundSize: "200% auto",
+                        backgroundPosition: "0% center",
+                        animation: "gradient 10s linear infinite",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      <Sparkles size={20} className="text-yellow-400" />
+                      <span>You won this round!</span>
+                      <Sparkles size={20} className="text-yellow-400" />
+                    </span>
                   </motion.div>
                 ) : (
-                  <p className="text-gray-300">
-                    <span className="font-medium text-cyan-400">{round.winningSubmission?.playerName}</span> won this round!
-                  </p>
+                  <motion.div 
+                    animate={{ 
+                      opacity: 1
+                    }}
+                    transition={{ 
+                      duration: 0.5
+                    }}
+                  >
+                    <span 
+                      className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent"
+                      style={{
+                        backgroundImage: "linear-gradient(90deg, #6E00FF 0%, #FF0099 50%, #00D1FF 100%)",
+                        backgroundSize: "200% auto",
+                        backgroundPosition: "0% center",
+                        animation: "gradient 10s linear infinite",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      {round.winningSubmission?.playerName} won this round!
+                    </span>
+                  </motion.div>
                 )}
               </div>
 
@@ -125,7 +199,7 @@ const RoundResultsModal: React.FC<RoundResultsModalProps> = ({
                   <span>Round Prompt:</span>
                 </h3>
                 <div className="bg-gray-800 p-3 rounded-lg mb-4">
-                  <p className="text-base italic text-white">{round.prompt.text}</p>
+                  <p className="text-base text-white">{round.prompt.text}</p>
                 </div>
                 
                 <h3 className="text-lg font-semibold mb-3">All Submissions:</h3>
@@ -142,12 +216,12 @@ const RoundResultsModal: React.FC<RoundResultsModalProps> = ({
                         src={round.winningSubmission?.gifUrl} 
                         alt={`Winning GIF by ${round.winningSubmission?.playerName}`}
                         className="w-full h-full object-contain"
+                        loading="lazy"
                       />
                     </div>
                     <div className="p-2 flex justify-between items-center">
                       <span className="text-sm font-medium">{round.winningSubmission?.playerName}</span>
                       <div className="bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Trophy size={10} />
                         <span>Winner</span>
                       </div>
                     </div>
@@ -183,24 +257,12 @@ const RoundResultsModal: React.FC<RoundResultsModalProps> = ({
                     ))}
                 </div>
               </div>
-              
-              <div className="flex justify-center">
-                <motion.button
-                  onClick={onClose}
-                  className="px-5 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-medium rounded-lg shadow-lg flex items-center gap-2 hover:from-purple-700 hover:to-cyan-700"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <ThumbsUp size={18} />
-                  <span>Continue</span>
-                </motion.button>
-              </div>
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
-};
+});
 
 export default RoundResultsModal; 

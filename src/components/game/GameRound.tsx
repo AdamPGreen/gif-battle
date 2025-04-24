@@ -107,6 +107,59 @@ const InRoundPromptCard = memo(() => {
   );
 });
 
+// New component for Last Round Results
+interface LastRoundResultsProps {
+  round: Round;
+  gameId: string;
+  onViewFullResults: () => void;
+}
+
+const LastRoundResults: React.FC<LastRoundResultsProps> = ({ round, gameId, onViewFullResults }) => {
+  if (!round || !round.isComplete || !round.winningSubmission) return null;
+  
+  return (
+    <motion.div 
+      className="bg-black bg-opacity-90 backdrop-blur-sm border border-purple-600 rounded-xl p-6 shadow-lg mb-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Last Round Winner</h2>
+        <motion.button
+          onClick={onViewFullResults}
+          className="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Trophy size={14} />
+          <span>View Full Results</span>
+        </motion.button>
+      </div>
+      
+      <div className="bg-gray-800 rounded-lg overflow-hidden">
+        <div className="p-3 mb-2">
+          <div className="text-sm text-gray-400">Prompt:</div>
+          <div className="text-sm font-medium">{round.prompt.text}</div>
+        </div>
+        <div className="aspect-video bg-gray-900 flex items-center justify-center">
+          <img 
+            src={round.winningSubmission.gifUrl} 
+            alt={`Winning GIF by ${round.winningSubmission.playerName}`}
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+        <div className="p-3">
+          <div className="flex items-center">
+            <Trophy size={14} className="text-yellow-500 mr-2" />
+            <span className="font-medium">Winner: {round.winningSubmission.playerName}</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 interface GameRoundProps {
   game: Game;
   currentPlayer: Player;
@@ -167,6 +220,17 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     searchForGifs,
     setSelectedGif
   } = useGifs();
+  
+  // Reset UI state when round changes
+  useEffect(() => {
+    // Clear search-related state when round changes
+    setSearchTerm('');
+    setSelectedGif(null);
+    setDisplayedSearchResults([]);
+    setHasSearched(false);
+    setSearchOffset(0);
+    setIsGifModalOpen(false);
+  }, [game.currentRound, setSelectedGif]);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [customPrompt, setCustomPrompt] = useState('');
@@ -297,6 +361,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const handleSelectWinner = async (submission: GifSubmission) => {
     try {
       await selectWinningGif(game.id, submission.id);
+      toast.success(`You selected ${submission.playerName}'s GIF as the winner!`);
     } catch (error: any) {
       console.error('Error selecting winner:', error);
       toast.error(error.message || 'Failed to select winner');
@@ -353,9 +418,30 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
     }
   };
   
+  // Close any open modals when game state changes significantly
+  useEffect(() => {
+    // Close custom prompt modal if round starts
+    if (currentRound.hasStarted && isCustomPromptOpen) {
+      setIsCustomPromptOpen(false);
+    }
+    
+    // Close GIF modal when round completes
+    if (currentRound.isComplete && isGifModalOpen) {
+      setIsGifModalOpen(false);
+    }
+  }, [currentRound.hasStarted, currentRound.isComplete, isCustomPromptOpen, isGifModalOpen]);
+  
+  const handleViewLastRoundResults = () => {
+    // Dispatch an event to open the last round results modal
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('VIEW_LAST_ROUND_RESULTS');
+      window.dispatchEvent(event);
+    }
+  };
+  
   return (
-    <div className="grid md:grid-cols-4 gap-6">
-      <div className="md:col-span-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-2">
         <motion.div 
           className="bg-black bg-opacity-90 backdrop-blur-sm border-0 md:border md:border-purple-600 rounded-none md:rounded-xl p-3 sm:p-6 shadow-lg mb-2 md:mb-6 mx-[-1rem] md:mx-0"
           initial={{ opacity: 0, y: 20 }}
@@ -639,7 +725,17 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       </div>
       
       <div className="md:col-span-1">
-        <PlayersList game={game} currentPlayer={currentPlayer} />
+        {/* Last Round Results (new) */}
+        {game.rounds.length > 1 && game.currentRound > 1 && (
+          <LastRoundResults 
+            round={game.rounds[game.currentRound - 2]} 
+            gameId={game.id}
+            onViewFullResults={handleViewLastRoundResults}
+          />
+        )}
+        
+        {/* Players List */}
+        <PlayersList game={game} currentPlayer={currentPlayer} currentUser={user} />
       </div>
       
       {/* Custom prompt modal */}
