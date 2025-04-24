@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "gif-battle-bceab"
-  }
+  },
+  "targets": {
+    "gif-battle-bceab": {
+      "storage": {
+        "gif-battle": [
+          "gif-battle-bceab.appspot.com"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

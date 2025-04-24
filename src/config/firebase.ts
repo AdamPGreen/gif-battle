@@ -14,7 +14,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDOD1HJ_JVM7JuAeYxjQv1DB1SbhE_DogI",
   authDomain: "gif-battle-bceab.firebaseapp.com",
   projectId: "gif-battle-bceab",
-  storageBucket: "gif-battle-bceab.appspot.com",
+  storageBucket: "gif-battle-bceab.firebasestorage.app",
   messagingSenderId: "550435143039",
   appId: "1:550435143039:web:8320bf8623ca670c282e4a",
   databaseURL: "https://gif-battle-bceab.firebaseio.com"
