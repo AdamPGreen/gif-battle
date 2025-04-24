@@ -10,84 +10,121 @@ import GameRound from './GameRound';
 import GameResults from './GameResults';
 import RoundHistory from './RoundHistory';
 import RoundResultsModal from './RoundResultsModal';
+import UserProfileMenu from '../user/UserProfileMenu';
 import { PowerGlitch } from 'powerglitch';
 
 interface GameRoomProps {
   user: User;
 }
 
-const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
+const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const { 
     game, 
     loading, 
-    error,
+    error, 
     loadGame, 
-    subscribeToGameUpdates,
+    joinExistingGame, 
     leaveCurrentGame,
-    setCurrentUser
+    setCurrentUser 
   } = useGameStore();
   
   const [copied, setCopied] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [showRoundResultsModal, setShowRoundResultsModal] = useState(false);
   const [lastCompletedRoundId, setLastCompletedRoundId] = useState<number | null>(null);
-
+  const [currentUser, setLocalUser] = useState<User>(initialUser);
+  
+  // Initialize PowerGlitch
   useEffect(() => {
+    PowerGlitch.glitch('.glitch-text', {
+      playMode: 'always',
+      createContainers: true,
+      hideOverflow: false,
+      timing: {
+        duration: 2000,
+        iterations: Infinity
+      },
+      glitchTimeSpan: {
+        start: 0.5,
+        end: 0.7,
+      },
+      shake: {
+        velocity: 15,
+        amplitudeX: 0.2,
+        amplitudeY: 0.2,
+      },
+      slice: {
+        count: 6,
+        velocity: 15,
+        minHeight: 0.02,
+        maxHeight: 0.15,
+        hueRotate: true,
+      },
+      pulse: false
+    });
+  }, []);
+  
+  useEffect(() => {
+    // Load the game when component mounts
+    if (gameId) {
+      loadGame(gameId);
+    }
+  }, [gameId, loadGame]);
+  
+  // Check for newly completed rounds
+  useEffect(() => {
+    if (game?.rounds) {
+      // Find the most recently completed round
+      const completedRounds = game.rounds.filter(r => r.isComplete);
+      if (completedRounds.length > 0) {
+        const mostRecentRound = completedRounds.reduce((latest, round) => 
+          round.id > latest.id ? round : latest
+        );
+        
+        // Show result modal only for newly completed rounds
+        if (mostRecentRound.id !== lastCompletedRoundId) {
+          setLastCompletedRoundId(mostRecentRound.id);
+          setShowRoundResultsModal(true);
+        }
+      }
+    }
+  }, [game?.rounds, lastCompletedRoundId]);
+  
+  const handleCopyInvite = () => {
     if (!gameId) return;
     
-    // Load the game
-    loadGame(gameId).catch(err => {
-      console.error('Error loading game:', err);
-      toast.error('Failed to load game');
-      navigate('/');
-    });
-    
-    // Set the current user
-    setCurrentUser(user);
-    
-    // Subscribe to real-time updates
-    const unsubscribe = subscribeToGameUpdates(gameId);
-    
-    // Clean up
-    return () => {
-      unsubscribe();
-    };
-  }, [gameId, user, loadGame, subscribeToGameUpdates, setCurrentUser, navigate]);
-
-  // Track when rounds complete and show the results modal
-  useEffect(() => {
-    if (!game) return;
-    
-    const currentRound = game.rounds[game.currentRound - 1];
-    
-    // If the current round has completed and it's not the same round we've already shown results for
-    if (currentRound?.isComplete && currentRound.id !== lastCompletedRoundId) {
-      setShowRoundResultsModal(true);
-      setLastCompletedRoundId(currentRound.id);
-    }
-  }, [game, lastCompletedRoundId]);
-
-  const handleCopyInvite = () => {
     const inviteLink = `${window.location.origin}/invite/${gameId}`;
-    navigator.clipboard.writeText(inviteLink);
-    setCopied(true);
-    toast.success('Invite link copied to clipboard!');
-    
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard.writeText(inviteLink)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast.success('Invite link copied!');
+      })
+      .catch(() => {
+        toast.error('Failed to copy invite link');
+      });
   };
   
   const handleLeaveGame = async () => {
     if (!gameId) return;
     
     try {
-      await leaveCurrentGame(gameId, user.id);
+      await leaveCurrentGame(gameId, currentUser.id);
       navigate('/');
     } catch (error: any) {
       console.error('Error leaving game:', error);
       toast.error(error.message || 'Failed to leave game');
     }
+  };
+  
+  const handleUserUpdate = (updatedUser: User) => {
+    // Update local state
+    setLocalUser(updatedUser);
+    
+    // Update the store
+    setCurrentUser(updatedUser);
   };
   
   if (loading) {
@@ -134,7 +171,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
     );
   }
   
-  const currentPlayer = game.players.find(p => p.id === user.id);
+  const currentPlayer = game.players.find(p => p.id === currentUser.id);
   const isHost = currentPlayer?.isHost || false;
   
   if (!currentPlayer || !currentPlayer.isActive) {
@@ -161,6 +198,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
         onLeaveGame={handleLeaveGame}
         onOpenHistory={() => setIsHistoryOpen(true)}
         copied={copied}
+        user={currentUser}
+        onUserUpdate={handleUserUpdate}
       />
       
       <div className="container mx-auto px-4 py-2 md:py-8">
@@ -172,7 +211,7 @@ const GameRoom: React.FC<GameRoomProps> = ({ user }) => {
           <GameRound 
             game={game} 
             currentPlayer={currentPlayer} 
-            user={user}
+            user={currentUser}
           />
         )}
         
@@ -210,9 +249,19 @@ interface GameHeaderProps {
   onLeaveGame: () => void;
   onOpenHistory: () => void;
   copied: boolean;
+  user: User;
+  onUserUpdate: (updatedUser: User) => void;
 }
 
-const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame, onOpenHistory, copied }) => {
+const GameHeader: React.FC<GameHeaderProps> = ({ 
+  game, 
+  onCopyInvite, 
+  onLeaveGame, 
+  onOpenHistory, 
+  copied,
+  user,
+  onUserUpdate
+}) => {
   const activePlayers = game.players.filter(p => p.isActive);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -284,10 +333,14 @@ const GameHeader: React.FC<GameHeaderProps> = ({ game, onCopyInvite, onLeaveGame
               <LogOut size={16} />
               <span>Exit Game</span>
             </motion.button>
+            
+            <UserProfileMenu user={user} onUserUpdate={onUserUpdate} />
           </div>
           
           {/* Mobile Controls */}
           <div className="md:hidden flex items-center gap-4">
+            <UserProfileMenu user={user} onUserUpdate={onUserUpdate} />
+            
             {hasCompletedRounds && (
               <motion.button
                 onClick={onOpenHistory}
