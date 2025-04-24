@@ -6,7 +6,7 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/images/bomb-icon.png'
+  '/images/glyph.png'
 ];
 
 // Install event - cache assets
@@ -54,8 +54,8 @@ self.addEventListener('push', (event) => {
   const data = event.data.json();
   const options = {
     body: data.body,
-    icon: '/images/bomb-icon.png',
-    badge: '/images/bomb-icon.png',
+    icon: '/images/glyph.png',
+    badge: '/images/glyph.png',
     data: data.data || {},
     actions: data.actions || [],
     vibrate: [100, 50, 100]

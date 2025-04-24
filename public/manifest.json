@@ -8,12 +8,12 @@
   "theme_color": "#4B0082",
   "icons": [
     {
-      "src": "/images/bomb-icon.png",
+      "src": "/images/glyph.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/images/bomb-icon.png",
+      "src": "/images/glyph.png",
       "sizes": "512x512",
       "type": "image/png"
     }
