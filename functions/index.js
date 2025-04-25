@@ -8,9 +8,11 @@
  */
 
 const {onRequest} = require("firebase-functions/v2/https");
-const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+// Comment out v2 Firestore triggers since we'll use v1 instead
+// const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+// Add v1 functions import
 const functions = require("firebase-functions");
 
 // Initialize Firebase Admin
@@ -82,6 +84,7 @@ async function sendPushNotification(subscription, payload) {
 }
 
 // HTTP callable function to send email (for SMS gateway)
+// Keep this as a v2 function
 exports.sendEmail = onRequest({ cors: true }, async (req, res) => {
   try {
     // Check request method
@@ -119,129 +122,28 @@ exports.sendEmail = onRequest({ cors: true }, async (req, res) => {
 });
 
 // Trigger on game round start
-exports.onRoundStart = onDocumentUpdated('games/{gameId}', async (event) => {
-  const gameData = event.data.after.data();
-  const previousGameData = event.data.before.data();
-  
-  // Check if a new round just started
-  const currentRound = gameData.rounds[gameData.currentRound - 1];
-  const previousRound = previousGameData.rounds[previousGameData.currentRound - 1];
-  
-  if (gameData.status === 'playing' && 
-      currentRound && previousRound && 
-      (currentRound.hasStarted === true && previousRound.hasStarted === false)) {
+// Convert to v1 format
+exports.onRoundStart = functions.firestore
+  .document('games/{gameId}')
+  .onUpdate(async (change, context) => {
+    const gameData = change.after.data();
+    const previousGameData = change.before.data();
     
-    // Notify all players except the judge about the new round
-    const players = gameData.players.filter(p => p.isActive && p.id !== currentRound.judgeId);
+    // Check if a new round just started
+    const currentRound = gameData.rounds[gameData.currentRound - 1];
+    const previousRound = previousGameData.rounds[previousGameData.currentRound - 1];
     
-    // Create notification payload
-    const payload = {
-      title: 'New Round Started!',
-      body: `It's time to submit your GIF for: "${currentRound.prompt.text}"`,
-      data: {
-        url: `/game/${gameData.id}`,
-        gameId: gameData.id,
-        roundId: currentRound.id
-      }
-    };
-    
-    // Send notifications to all players
-    for (const player of players) {
-      const userSubscription = await getUserSubscription(player.id);
+    if (gameData.status === 'playing' && 
+        currentRound && previousRound && 
+        (currentRound.hasStarted === true && previousRound.hasStarted === false)) {
       
-      if (userSubscription && userSubscription.preferences.newRound) {
-        await sendPushNotification(userSubscription.subscription, payload);
-      }
-    }
-  }
-});
-
-// Trigger when a winner is selected
-exports.onWinnerSelected = onDocumentUpdated('games/{gameId}', async (event) => {
-  const gameData = event.data.after.data();
-  const previousGameData = event.data.before.data();
-  
-  // Check if a winner was just selected
-  const currentRound = gameData.rounds[gameData.currentRound - 1];
-  const previousRound = previousGameData.rounds[previousGameData.currentRound - 1];
-  
-  if (currentRound && previousRound && 
-      (currentRound.isComplete === true && previousRound.isComplete === false) &&
-      currentRound.winningSubmission) {
-    
-    // Get the winner
-    const winningSubmission = currentRound.winningSubmission;
-    const winner = gameData.players.find(p => p.id === winningSubmission.playerId);
-    
-    if (!winner) return;
-    
-    // Create winner notification payload
-    const winnerPayload = {
-      title: 'You Won This Round! 🎉',
-      body: `Your GIF for "${currentRound.prompt.text}" was selected as the winner!`,
-      data: {
-        url: `/game/${gameData.id}`,
-        gameId: gameData.id,
-        roundId: currentRound.id
-      }
-    };
-    
-    // Create other players notification payload
-    const othersPayload = {
-      title: 'Round Winner Announced!',
-      body: `${winner.name} won this round with their GIF submission.`,
-      data: {
-        url: `/game/${gameData.id}`,
-        gameId: gameData.id,
-        roundId: currentRound.id
-      }
-    };
-    
-    // Send notification to winner
-    const winnerSubscription = await getUserSubscription(winner.id);
-    if (winnerSubscription && winnerSubscription.preferences.winnerPicked) {
-      await sendPushNotification(winnerSubscription.subscription, winnerPayload);
-    }
-    
-    // Send notifications to other players
-    for (const player of gameData.players) {
-      if (player.id !== winner.id && player.isActive) {
-        const userSubscription = await getUserSubscription(player.id);
-        
-        if (userSubscription && userSubscription.preferences.winnerPicked) {
-          await sendPushNotification(userSubscription.subscription, othersPayload);
-        }
-      }
-    }
-  }
-});
-
-// Trigger when all GIFs have been submitted
-exports.onAllGifsSubmitted = onDocumentUpdated('games/{gameId}', async (event) => {
-  const gameData = event.data.after.data();
-  const previousGameData = event.data.before.data();
-  
-  // Check if a new submission was just added
-  const currentRound = gameData.rounds[gameData.currentRound - 1];
-  const previousRound = previousGameData.rounds[previousGameData.currentRound - 1];
-  
-  if (currentRound && previousRound && 
-      currentRound.submissions.length > previousRound.submissions.length) {
-    
-    // Check if all active players except the judge have submitted
-    const activePlayers = gameData.players.filter(p => p.isActive && !p.isJudge);
-    const allSubmitted = activePlayers.length === currentRound.submissions.length;
-    
-    if (allSubmitted) {
-      // Get the judge
-      const judge = gameData.players.find(p => p.id === currentRound.judgeId);
+      // Notify all players except the judge about the new round
+      const players = gameData.players.filter(p => p.isActive && p.id !== currentRound.judgeId);
       
-      if (!judge) return;
-      
-      // Create notification payload for judge
-      const judgePayload = {
-        title: 'All GIFs Submitted!',
-        body: 'Everyone has submitted their GIFs. Time to pick a winner!',
+      // Create notification payload
+      const payload = {
+        title: 'New Round Started!',
+        body: `It's time to submit your GIF for: "${currentRound.prompt.text}"`,
         data: {
           url: `/game/${gameData.id}`,
           gameId: gameData.id,
@@ -249,12 +151,122 @@ exports.onAllGifsSubmitted = onDocumentUpdated('games/{gameId}', async (event) =
         }
       };
       
-      // Send notification to judge
-      const judgeSubscription = await getUserSubscription(judge.id);
-      
-      if (judgeSubscription && judgeSubscription.preferences.allGifsSubmitted) {
-        await sendPushNotification(judgeSubscription.subscription, judgePayload);
+      // Send notifications to all players
+      for (const player of players) {
+        const userSubscription = await getUserSubscription(player.id);
+        
+        if (userSubscription && userSubscription.preferences.newRound) {
+          await sendPushNotification(userSubscription.subscription, payload);
+        }
       }
     }
-  }
-});
+  });
+
+// Trigger when a winner is selected
+// Convert to v1 format
+exports.onWinnerSelected = functions.firestore
+  .document('games/{gameId}')
+  .onUpdate(async (change, context) => {
+    const gameData = change.after.data();
+    const previousGameData = change.before.data();
+    
+    // Check if a winner was just selected
+    const currentRound = gameData.rounds[gameData.currentRound - 1];
+    const previousRound = previousGameData.rounds[previousGameData.currentRound - 1];
+    
+    if (currentRound && previousRound && 
+        (currentRound.isComplete === true && previousRound.isComplete === false) &&
+        currentRound.winningSubmission) {
+      
+      // Get the winner
+      const winningSubmission = currentRound.winningSubmission;
+      const winner = gameData.players.find(p => p.id === winningSubmission.playerId);
+      
+      if (!winner) return;
+      
+      // Create winner notification payload
+      const winnerPayload = {
+        title: 'You Won This Round! 🎉',
+        body: `Your GIF for "${currentRound.prompt.text}" was selected as the winner!`,
+        data: {
+          url: `/game/${gameData.id}`,
+          gameId: gameData.id,
+          roundId: currentRound.id
+        }
+      };
+      
+      // Create other players notification payload
+      const othersPayload = {
+        title: 'Round Winner Announced!',
+        body: `${winner.name} won this round with their GIF submission.`,
+        data: {
+          url: `/game/${gameData.id}`,
+          gameId: gameData.id,
+          roundId: currentRound.id
+        }
+      };
+      
+      // Send notification to winner
+      const winnerSubscription = await getUserSubscription(winner.id);
+      if (winnerSubscription && winnerSubscription.preferences.winnerPicked) {
+        await sendPushNotification(winnerSubscription.subscription, winnerPayload);
+      }
+      
+      // Send notifications to other players
+      for (const player of gameData.players) {
+        if (player.id !== winner.id && player.isActive) {
+          const userSubscription = await getUserSubscription(player.id);
+          
+          if (userSubscription && userSubscription.preferences.winnerPicked) {
+            await sendPushNotification(userSubscription.subscription, othersPayload);
+          }
+        }
+      }
+    }
+  });
+
+// Trigger when all GIFs have been submitted
+// Convert to v1 format
+exports.onAllGifsSubmitted = functions.firestore
+  .document('games/{gameId}')
+  .onUpdate(async (change, context) => {
+    const gameData = change.after.data();
+    const previousGameData = change.before.data();
+    
+    // Check if a new submission was just added
+    const currentRound = gameData.rounds[gameData.currentRound - 1];
+    const previousRound = previousGameData.rounds[previousGameData.currentRound - 1];
+    
+    if (currentRound && previousRound && 
+        currentRound.submissions.length > previousRound.submissions.length) {
+      
+      // Check if all active players except the judge have submitted
+      const activePlayers = gameData.players.filter(p => p.isActive && !p.isJudge);
+      const allSubmitted = activePlayers.length === currentRound.submissions.length;
+      
+      if (allSubmitted) {
+        // Get the judge
+        const judge = gameData.players.find(p => p.id === currentRound.judgeId);
+        
+        if (!judge) return;
+        
+        // Create notification payload for judge
+        const judgePayload = {
+          title: 'All GIFs Submitted!',
+          body: 'Everyone has submitted their GIFs. Time to pick a winner!',
+          data: {
+            url: `/game/${gameData.id}`,
+            gameId: gameData.id,
+            roundId: currentRound.id
+          }
+        };
+        
+        // Send notification to judge
+        const judgeSubscription = await getUserSubscription(judge.id);
+        
+        if (judgeSubscription && judgeSubscription.preferences.allGifsSubmitted) {
+          await sendPushNotification(judgeSubscription.subscription, judgePayload);
+        }
+      }
+    }
+  });
