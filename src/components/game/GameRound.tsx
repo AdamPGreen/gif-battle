@@ -528,7 +528,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                             whileTap={{ scale: 0.95 }}
                           >
                             <img 
-                              src={gif.images.fixed_height_small.url} 
+                              src={gif.images.fixed_height.url} 
                               alt="GIF search result"
                               className="w-full h-auto object-contain"
                             />
@@ -573,7 +573,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
                           whileTap={{ scale: 0.95 }}
                         >
                           <img 
-                            src={gif.images.fixed_height_small.url} 
+                            src={gif.images.fixed_height.url} 
                             alt="Trending GIF"
                             className="w-full h-auto object-contain"
                           />
