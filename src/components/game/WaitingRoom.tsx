@@ -31,7 +31,6 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
     
     try {
       await startCurrentGame(game.id);
-      toast.success('Game started!');
     } catch (error: any) {
       console.error('Error starting game:', error);
       toast.error(error.message || 'Failed to start game');
@@ -40,7 +39,6 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
   
   const handleCopyGameId = () => {
     navigator.clipboard.writeText(game.id);
-    toast.success('Game ID copied to clipboard!');
   };
   
   const handleShareGame = async () => {
@@ -54,17 +52,14 @@ const WaitingRoom: React.FC<WaitingRoomProps> = ({
           text: 'Click to join my GIF Battle game',
           url: shareUrl
         });
-        toast.success('Game shared successfully!');
       } catch (error) {
         console.error('Error sharing:', error);
         // Fallback to copy if share was cancelled or failed
         navigator.clipboard.writeText(shareUrl);
-        toast.success('Game link copied to clipboard!');
       }
     } else {
       // Fallback for desktop browsers
       navigator.clipboard.writeText(shareUrl);
-      toast.success('Game link copied to clipboard!');
     }
   };
   

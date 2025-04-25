@@ -3,6 +3,9 @@ export interface User {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
+  phoneNumber?: string;
+  mobileCarrier?: string;
+  smsNotificationsEnabled?: boolean;
 }
 
 export interface Prompt {

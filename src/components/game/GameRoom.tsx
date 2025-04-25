@@ -12,10 +12,29 @@ import RoundHistory from './RoundHistory';
 import RoundResultsModal from './RoundResultsModal';
 import UserProfileMenu from '../user/UserProfileMenu';
 import { PowerGlitch } from 'powerglitch';
+import { sendNewRoundSmsToPlayers, sendAllGifsSubmittedSmsToJudge } from '../../services/notifications';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 interface GameRoomProps {
   user: User;
 }
+
+// Add new function to fetch user data with SMS information
+const fetchUserData = async (userId: string): Promise<User | null> => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (userDoc.exists()) {
+      return userDoc.data() as User;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    return null;
+  }
+};
 
 const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -40,6 +59,8 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
   // Refs for tracking notification states
   const roundStartRef = useRef<{ [key: number]: boolean }>({});
   const roundCompleteRef = useRef<{ [key: number]: boolean }>({});
+  const roundSmsRef = useRef<{ [key: number]: boolean }>({});
+  const allGifsSubmittedSmsRef = useRef<{ [key: number]: boolean }>({});
   
   // Initialize PowerGlitch
   useEffect(() => {
@@ -114,10 +135,85 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
       // Record that we've shown this notification
       roundStartRef.current[game.currentRound] = true;
       
-      toast.success(`Round ${game.currentRound} has started!`, {
-        id: `round-start-${game.currentRound}`,
-        duration: 3000
-      });
+      // Remove success toast but maintain SMS functionality
+      // toast.success(`Round ${game.currentRound} has started!`, {
+      //   id: `round-start-${game.currentRound}`,
+      //   duration: 3000
+      // });
+      
+      // Send SMS notifications for round start if not already sent
+      if (!roundSmsRef.current[game.currentRound]) {
+        roundSmsRef.current[game.currentRound] = true;
+        
+        // Get full user data for all players
+        const sendSmsToPlayers = async () => {
+          try {
+            // Filter out the judge
+            const players = game.players.filter(p => 
+              p.isActive && !p.isJudge && p.id !== currentRound.judgeId
+            );
+            
+            // Fetch full user data with SMS details
+            const playerUsers = await Promise.all(
+              players.map(async (player) => {
+                const userData = await fetchUserData(player.id);
+                return userData;
+              })
+            );
+            
+            // Filter out null values and send SMS
+            const validUsers = playerUsers.filter(u => u !== null) as User[];
+            if (validUsers.length > 0) {
+              await sendNewRoundSmsToPlayers(
+                validUsers,
+                game.id,
+                game.currentRound
+              );
+            }
+          } catch (error) {
+            console.error('Error sending round start SMS:', error);
+          }
+        };
+        
+        sendSmsToPlayers();
+      }
+    }
+    
+    // Check if all GIFs have been submitted for the current round
+    if (
+      currentRound?.hasStarted && 
+      !currentRound.isComplete && 
+      !allGifsSubmittedSmsRef.current[game.currentRound]
+    ) {
+      const activePlayers = game.players.filter(p => p.isActive && !p.isJudge);
+      const submissions = currentRound.submissions || [];
+      
+      // If all active non-judge players have submitted GIFs
+      if (submissions.length === activePlayers.length) {
+        // Mark as notified so we don't send multiple times
+        allGifsSubmittedSmsRef.current[game.currentRound] = true;
+        
+        // Get the judge and send SMS notification
+        const sendSmsToJudge = async () => {
+          try {
+            const judge = game.players.find(p => p.id === currentRound.judgeId);
+            if (judge) {
+              const judgeUser = await fetchUserData(judge.id);
+              if (judgeUser) {
+                await sendAllGifsSubmittedSmsToJudge(
+                  judgeUser,
+                  game.id,
+                  game.currentRound
+                );
+              }
+            }
+          } catch (error) {
+            console.error('Error sending all GIFs submitted SMS:', error);
+          }
+        };
+        
+        sendSmsToJudge();
+      }
     }
     
     // Show toast when a round completes
@@ -125,13 +221,14 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
       // Record that we've shown this notification
       roundCompleteRef.current[game.currentRound] = true;
       
-      const winnerName = currentRound.winningSubmission?.playerName;
-      if (winnerName) {
-        toast.success(`Round over! ${winnerName} won the round!`, {
-          id: `round-complete-${game.currentRound}`,
-          duration: 4000
-        });
-      }
+      // Remove success toast but maintain functionality
+      // const winnerName = currentRound.winningSubmission?.playerName;
+      // if (winnerName) {
+      //   toast.success(`Round over! ${winnerName} won the round!`, {
+      //     id: `round-complete-${game.currentRound}`,
+      //     duration: 4000
+      //   });
+      // }
     }
     
   }, [game]);
@@ -153,15 +250,16 @@ const GameRoom: React.FC<GameRoomProps> = ({ user: initialUser }) => {
     if (!gameId) return;
     
     const inviteLink = `${window.location.origin}/invite/${gameId}`;
-    navigator.clipboard.writeText(inviteLink)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        toast.success('Invite link copied!');
-      })
-      .catch(() => {
-        toast.error('Failed to copy invite link');
-      });
+    navigator.clipboard.writeText(inviteLink);
+    
+    // Remove success toast but maintain functionality
+    // toast.success('Invite link copied!');
+    setCopied(true);
+    
+    // Reset copied state after 2 seconds
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   };
   
   const handleLeaveGame = async () => {

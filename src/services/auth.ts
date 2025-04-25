@@ -94,7 +94,12 @@ export const createUserDocument = async (userId: string, userData: User) => {
   }
 };
 
-export const updateUserProfile = async (displayName: string, avatarFile: File | null) => {
+export const updateUserProfile = async (
+  displayName: string,
+  avatarFile: File | null,
+  phoneNumber?: string,
+  mobileCarrier?: string
+) => {
   try {
     if (!auth.currentUser) {
       throw new Error('No authenticated user found');
@@ -121,16 +126,30 @@ export const updateUserProfile = async (displayName: string, avatarFile: File | 
       photoURL
     });
     
-    // Update the user document in Firestore
-    const userRef = doc(db, 'users', auth.currentUser.uid);
-    await updateDoc(userRef, {
+    // Prepare update data
+    const updateData: Record<string, any> = {
       displayName,
       photoURL
-    });
+    };
+    
+    // Add phone number and carrier if provided
+    if (phoneNumber !== undefined) {
+      updateData.phoneNumber = phoneNumber;
+    }
+    
+    if (mobileCarrier !== undefined) {
+      updateData.mobileCarrier = mobileCarrier;
+    }
+    
+    // Update the user document in Firestore
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    await updateDoc(userRef, updateData);
     
     return {
       displayName,
-      photoURL
+      photoURL,
+      phoneNumber,
+      mobileCarrier
     };
   } catch (error) {
     return handleAuthError(error);

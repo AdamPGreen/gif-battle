@@ -54,7 +54,9 @@ const ActiveGamesList: React.FC<ActiveGamesListProps> = ({ user }) => {
         toast.loading('Rejoining game...', { id: 'rejoinGame' });
         const playerName = user.displayName || `Player_${user.id.slice(0, 5)}`;
         await joinExistingGame(gameId, user.id, playerName);
-        toast.success('Successfully rejoined game!', { id: 'rejoinGame' });
+        
+        // Keep the loading toast dismissal but not the success toast
+        toast.dismiss('rejoinGame');
       } catch (error: any) {
         console.error('Error rejoining game:', error);
         toast.error(error.message || 'Failed to rejoin game', { id: 'rejoinGame' });

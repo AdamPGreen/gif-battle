@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, UserCircle, Upload, Save, Loader2, Bell } from 'lucide-react';
+import { ArrowLeft, UserCircle, Upload, Save, Loader2, Bell, PhoneCall } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { updateUserProfile } from '../services/auth';
 import NotificationSettings from '../components/NotificationSettings';
 import toast from 'react-hot-toast';
+import { carriers, formatPhoneNumber, isValidPhoneNumber } from '../utils/smsGateways';
 
 const ProfilePage: React.FC = () => {
   const { user, loading } = useAuth();
@@ -15,6 +16,11 @@ const ProfilePage: React.FC = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // New phone and carrier state
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [mobileCarrier, setMobileCarrier] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -32,6 +38,15 @@ const ProfilePage: React.FC = () => {
     // Set initial avatar preview from user data
     if (user?.photoURL) {
       setAvatarPreview(user.photoURL);
+    }
+    
+    // Set initial phone number and carrier
+    if (user?.phoneNumber) {
+      setPhoneNumber(user.phoneNumber);
+    }
+    
+    if (user?.mobileCarrier) {
+      setMobileCarrier(user.mobileCarrier);
     }
   }, [user, loading, navigate]);
   
@@ -53,15 +68,41 @@ const ProfilePage: React.FC = () => {
     fileInputRef.current?.click();
   };
   
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPhoneNumber(value);
+    
+    // Validate when non-empty
+    if (value && !isValidPhoneNumber(value)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+    } else {
+      setPhoneError('');
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) return;
     
+    // Validate phone number if provided
+    if (phoneNumber && !isValidPhoneNumber(phoneNumber)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      await updateUserProfile(displayName, avatarFile);
+      // Format phone number for storage
+      const formattedPhone = phoneNumber ? formatPhoneNumber(phoneNumber) : undefined;
+      
+      await updateUserProfile(
+        displayName, 
+        avatarFile, 
+        formattedPhone,
+        mobileCarrier || undefined
+      );
       toast.success('Profile updated successfully');
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -164,6 +205,55 @@ const ProfilePage: React.FC = () => {
                 placeholder="Enter your display name"
                 required
               />
+            </div>
+            
+            {/* New Phone Number Field */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <PhoneCall size={18} className="text-purple-400" />
+                <label htmlFor="phoneNumber" className="text-sm font-medium text-gray-300">
+                  Phone Number (for SMS notifications)
+                </label>
+              </div>
+              <input
+                type="tel"
+                id="phoneNumber"
+                value={phoneNumber}
+                onChange={handlePhoneNumberChange}
+                className={`w-full px-4 py-3 bg-gray-800 border ${
+                  phoneError ? 'border-red-500' : 'border-gray-700'
+                } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                placeholder="10-digit number (e.g., 1234567890)"
+              />
+              {phoneError && (
+                <p className="mt-1 text-sm text-red-500">{phoneError}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-400">
+                For SMS notifications via carrier email gateways. We don't share this information.
+              </p>
+            </div>
+            
+            {/* New Mobile Carrier Field */}
+            <div>
+              <label htmlFor="mobileCarrier" className="block mb-2 text-sm font-medium text-gray-300">
+                Mobile Carrier
+              </label>
+              <select
+                id="mobileCarrier"
+                value={mobileCarrier}
+                onChange={(e) => setMobileCarrier(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">Select your carrier</option>
+                {carriers.map((carrier) => (
+                  <option key={carrier} value={carrier}>
+                    {carrier}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-400">
+                Required for SMS notifications. Select the carrier associated with your phone number.
+              </p>
             </div>
             
             <motion.button

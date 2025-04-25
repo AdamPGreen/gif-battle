@@ -338,20 +338,21 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
       return;
     }
     
-    const submission: GifSubmission = {
-      id: nanoid(),
-      gifId: selectedGif.id,
-      gifUrl: selectedGif.images.original.url,
-      playerId: user.id,
-      playerName: currentPlayer.name,
-      round: currentRound.id
-    };
-    
     try {
+      const submission: GifSubmission = {
+        id: nanoid(),
+        gifId: selectedGif.id,
+        gifUrl: selectedGif.images.original.url,
+        playerId: currentPlayer.id,
+        playerName: currentPlayer.name,
+        round: currentRound.id
+      };
+      
       await submitGifToGame(game.id, submission);
-      toast.success('GIF submitted!');
-      setSelectedGif(null);
+      
+      // Close the modal after submission
       setIsGifModalOpen(false);
+      
     } catch (error: any) {
       console.error('Error submitting GIF:', error);
       toast.error(error.message || 'Failed to submit GIF');
@@ -361,7 +362,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const handleSelectWinner = async (submission: GifSubmission) => {
     try {
       await selectWinningGif(game.id, submission.id);
-      toast.success(`You selected ${submission.playerName}'s GIF as the winner!`);
+      
     } catch (error: any) {
       console.error('Error selecting winner:', error);
       toast.error(error.message || 'Failed to select winner');
@@ -392,7 +393,7 @@ const GameRound: React.FC<GameRoundProps> = ({ game, currentPlayer, user }) => {
   const handleStartRound = async () => {
     try {
       await startCurrentGameRound(game.id);
-      toast.success('Round started!');
+      
     } catch (error: any) {
       console.error('Error starting round:', error);
       toast.error(error.message || 'Failed to start round');
