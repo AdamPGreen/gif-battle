@@ -1,6 +1,14 @@
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { User } from '../types';
+import { constructSmsEmail } from '../utils/smsGateways';
+
+// SMS notification preferences interface
+interface SmsNotificationPreferences {
+  newRound: boolean;
+  winnerPicked: boolean;
+  allGifsSubmitted: boolean;
+}
 
 // Check if browser supports notifications
 export const checkNotificationSupport = (): boolean => {
@@ -143,4 +151,143 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
-} 
+}
+
+// New Functions for SMS Notification Support
+
+// Update user's phone number and carrier
+export const updateSmsDetails = async (
+  userId: string,
+  phoneNumber: string,
+  mobileCarrier: string
+): Promise<boolean> => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      phoneNumber,
+      mobileCarrier,
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating SMS details:', error);
+    return false;
+  }
+};
+
+// Toggle SMS notifications
+export const toggleSmsNotifications = async (
+  userId: string,
+  enabled: boolean
+): Promise<boolean> => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      smsNotificationsEnabled: enabled
+    });
+    return true;
+  } catch (error) {
+    console.error('Error toggling SMS notifications:', error);
+    return false;
+  }
+};
+
+// Save SMS notification preferences
+export const saveSmsNotificationPreferences = async (
+  userId: string,
+  preferences: SmsNotificationPreferences
+): Promise<boolean> => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+      smsNotificationPreferences: preferences
+    });
+    return true;
+  } catch (error) {
+    console.error('Error saving SMS notification preferences:', error);
+    return false;
+  }
+};
+
+// Send SMS notification
+export const sendSmsNotification = async (
+  user: User,
+  subject: string,
+  message: string
+): Promise<boolean> => {
+  try {
+    if (!user.phoneNumber || !user.mobileCarrier || !user.smsNotificationsEnabled) {
+      return false;
+    }
+    
+    const smsEmail = constructSmsEmail(user.phoneNumber, user.mobileCarrier);
+    if (!smsEmail) {
+      console.error('Invalid SMS email construction');
+      return false;
+    }
+    
+    // Use the cloud function to send the email
+    const functionsUrl = process.env.REACT_APP_FUNCTIONS_URL || 'https://us-central1-gif-battle-app.cloudfunctions.net';
+    const response = await fetch(`${functionsUrl}/sendEmail`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: smsEmail,
+        subject: subject,
+        text: message.substring(0, 160) // Trim to SMS character limit
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      console.error('Error from email service:', data.error);
+      return false;
+    }
+    
+    console.log(`SMS email sent to ${smsEmail}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending SMS notification:', error);
+    return false;
+  }
+};
+
+// Send new round notification to all players via SMS
+export const sendNewRoundSmsToPlayers = async (
+  players: User[],
+  gameId: string,
+  roundNumber: number
+): Promise<void> => {
+  for (const player of players) {
+    if (
+      player.smsNotificationsEnabled &&
+      player.phoneNumber &&
+      player.mobileCarrier
+    ) {
+      const subject = "GIF Battle: New Round";
+      const message = `Round ${roundNumber} has started in your GIF Battle game! Time to submit your GIF.`;
+      
+      await sendSmsNotification(player, subject, message);
+    }
+  }
+};
+
+// Send all GIFs submitted notification to judge via SMS
+export const sendAllGifsSubmittedSmsToJudge = async (
+  judge: User,
+  gameId: string,
+  roundNumber: number
+): Promise<void> => {
+  if (
+    judge.smsNotificationsEnabled &&
+    judge.phoneNumber &&
+    judge.mobileCarrier
+  ) {
+    const subject = "GIF Battle: All GIFs Submitted";
+    const message = `All players have submitted their GIFs for Round ${roundNumber}. Time to judge!`;
+    
+    await sendSmsNotification(judge, subject, message);
+  }
+}; 

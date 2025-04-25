@@ -11,9 +11,15 @@ const {onRequest} = require("firebase-functions/v2/https");
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const functions = require("firebase-functions");
 
 // Initialize Firebase Admin
 admin.initializeApp();
+
+// Resend configuration
+const { Resend } = require('resend');
+// Use Firebase Functions config instead of process.env
+const resend = new Resend(functions.config().resend.api_key);
 
 // Web push configuration
 const webpush = require('web-push');
@@ -27,7 +33,7 @@ const vapidKeys = {
 
 // Configure web push with VAPID details
 webpush.setVapidDetails(
-  'adam.p.green@gmail.com', // Replace with your email
+  'https://gif-battle.vercel.app/', // Replace with your website URL
   vapidKeys.publicKey,
   vapidKeys.privateKey
 );
@@ -74,6 +80,43 @@ async function sendPushNotification(subscription, payload) {
     return false;
   }
 }
+
+// HTTP callable function to send email (for SMS gateway)
+exports.sendEmail = onRequest({ cors: true }, async (req, res) => {
+  try {
+    // Check request method
+    if (req.method !== 'POST') {
+      res.status(405).send('Method Not Allowed');
+      return;
+    }
+    
+    // Get data from request
+    const { to, subject, text } = req.body;
+    
+    // Validate required fields
+    if (!to || !subject || !text) {
+      res.status(400).send('Missing required fields: to, subject, text');
+      return;
+    }
+    
+    // Send email using Resend
+    const data = await resend.emails.send({
+      from: 'GIF Battle <notifications@gif-battle.vercel.app>',
+      to: to,
+      subject: subject,
+      text: text.substring(0, 160), // Trim to SMS character limit
+    });
+    
+    logger.info('Email sent successfully:', { to, emailId: data.id });
+    res.status(200).json({ success: true, id: data.id });
+  } catch (error) {
+    logger.error('Error sending email:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Unknown error occurred'
+    });
+  }
+});
 
 // Trigger on game round start
 exports.onRoundStart = onDocumentUpdated('games/{gameId}', async (event) => {
