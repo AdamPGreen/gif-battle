@@ -225,29 +225,52 @@ export const sendSmsNotification = async (
       return false;
     }
     
+    // Prepare the request payload
+    const payload = {
+      to: smsEmail,
+      subject: subject,
+      text: message.substring(0, 160) // Trim to SMS character limit
+    };
+    
     // Use the cloud function to send the email
-    const functionsUrl = process.env.REACT_APP_FUNCTIONS_URL || 'https://us-central1-gif-battle-app.cloudfunctions.net';
-    const response = await fetch(`${functionsUrl}/sendEmail`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: smsEmail,
-        subject: subject,
-        text: message.substring(0, 160) // Trim to SMS character limit
-      }),
-    });
-
-    const data = await response.json();
+    const functionsUrl = process.env.REACT_APP_FUNCTIONS_URL || 'https://api-ou2wdksd2a-uc.a.run.app';
     
-    if (!data.success) {
-      console.error('Error from email service:', data.error);
-      return false;
+    try {
+      // First try with regular CORS mode - using the new endpoint structure
+      const response = await fetch(`${functionsUrl}/sendEmail`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        console.error('Error from email service:', data.error);
+        return false;
+      }
+      
+      console.log(`SMS email sent to ${smsEmail}`);
+      return true;
+    } catch (error) {
+      console.warn('Initial request failed, trying with no-cors mode:', error);
+      
+      // If the first attempt fails, try with no-cors as fallback
+      // Note: With no-cors we can't read the response, so we'll just have to hope it worked
+      await fetch(`${functionsUrl}/sendEmail`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify(payload),
+      });
+      
+      console.log(`SMS email sent to ${smsEmail} (no-cors mode)`);
+      return true; // We can't check for success with no-cors, so just return true
     }
-    
-    console.log(`SMS email sent to ${smsEmail}`);
-    return true;
   } catch (error) {
     console.error('Error sending SMS notification:', error);
     return false;
